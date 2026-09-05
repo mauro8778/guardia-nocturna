@@ -4,12 +4,12 @@
   "description": "Guardia Nocturna - NestJS Backend API",
   "main": "dist/main.js",
   "scripts": {
-    "build": "prisma generate && tsc",
+    "build": "npx prisma generate && npx tsc",
     "start": "ts-node src/main.ts",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "test": "jest",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
