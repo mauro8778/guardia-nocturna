@@ -152,6 +152,11 @@ export const adminApi = {
     return response.data;
   },
 
+  updateMyMembership: async (data: { teacherId: string; membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE' }): Promise<User> => {
+    const response = await api.patch<User>('/users/docente/my-membership', data);
+    return response.data;
+  },
+
   submitMembershipPayment: async (data: { teacherId: string; teacherName: string; receiptRef?: string; receiptUrl?: string }) => {
     const response = await api.patch('/users/docente/membership-payment', data);
     return response.data;

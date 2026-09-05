@@ -58,6 +58,13 @@ export class UsersController {
     return this.usersService.updateTeacherMembership(id, body.membershipType, body.membershipStatus);
   }
 
+  @Patch('docente/my-membership')
+  async updateMyMembership(
+    @Body() body: { teacherId: string; membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE' },
+  ) {
+    return this.usersService.updateTeacherMembership(body.teacherId, body.membershipType);
+  }
+
   @Patch('docente/membership-payment')
   async submitMembershipPayment(
     @Body() body: { teacherId: string; teacherName: string; receiptRef?: string; receiptUrl?: string },

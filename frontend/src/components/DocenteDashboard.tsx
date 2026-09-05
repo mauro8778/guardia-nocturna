@@ -18,9 +18,11 @@ import {
   Plus,
   Save,
   Check,
+  X,
 } from 'lucide-react';
 import { Appointment, AppointmentStatus, DocenteAvailability } from '../types';
-import { appointmentsApi, availabilityApi } from '../services/api';
+import { appointmentsApi, availabilityApi, adminApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface DocenteDashboardProps {
   availability: DocenteAvailability | null;
@@ -45,11 +47,66 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
   onOpenClassroom,
   onOpenWhatsApp,
 }) => {
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT_UNPAID' | 'RECEIPT_SUBMITTED' | 'CONFIRMED_PAID'>('ALL');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // Membership modal & selection state
+  const [isMembershipModalOpen, setIsMembershipModalOpen] = useState<boolean>(false);
+  const [currentMembershipType, setCurrentMembershipType] = useState<'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE'>(
+    (user?.membershipType as any) || 'COMMISSION_10'
+  );
+  const [monthlyReceiptRef, setMonthlyReceiptRef] = useState<string>('');
+  const [monthlyFile, setMonthlyFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [isSubmittingMonthlyReceipt, setIsSubmittingMonthlyReceipt] = useState<boolean>(false);
+
+  const handleSelectPlan = async (membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE') => {
+    if (!user) return;
+    try {
+      if (membershipType === 'LIFETIME_FREE') {
+        onOpenWhatsApp(
+          null,
+          `¡Hola Admin Guardia Docente! Quisiera solicitar el Plan Beca Vitalicio (VIP) para mi cuenta docente (${user.email}).`
+        );
+        setIsMembershipModalOpen(false);
+        return;
+      }
+
+      await adminApi.updateMyMembership({ teacherId: user.id, membershipType });
+      setCurrentMembershipType(membershipType);
+      showToast(`¡Plan de Membresía actualizado exitosamente a ${
+        membershipType === 'MONTHLY_FIXED' ? 'Fijo Mensual $50.000 (0% comisión)' : '10% por clase'
+      }!`);
+      setIsMembershipModalOpen(false);
+    } catch (err) {
+      console.error('Error al actualizar plan:', err);
+      showToast('Error al actualizar el plan.');
+    }
+  };
+
+  const handleUploadMonthlyPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmittingMonthlyReceipt(true);
+    try {
+      await adminApi.submitMembershipPayment({
+        teacherId: user.id,
+        teacherName: user.fullName,
+        receiptRef: monthlyReceiptRef || monthlyFile?.name || 'Comprobante Mensual $50k',
+        receiptUrl: monthlyFile?.dataUrl || undefined,
+      });
+      showToast('¡Comprobante de Membresía Mensual ($50.000) enviado para aprobación!');
+      setIsMembershipModalOpen(false);
+    } catch (err) {
+      console.error('Error al enviar comprobante:', err);
+      showToast('Error al enviar comprobante.');
+    } finally {
+      setIsSubmittingMonthlyReceipt(false);
+    }
+  };
 
   // SubTab (Turnos vs Disponibilidad)
   const [subTab, setSubTab] = useState<'TURNOS' | 'DISPONIBILIDAD'>('TURNOS');
@@ -254,12 +311,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
         <div className="flex items-center space-x-2 shrink-0 w-full md:w-auto">
           <button
             type="button"
-            onClick={() => {
-              onOpenWhatsApp(
-                null,
-                `¡Hola Admin Guardia Docente! Me gustaría consultar/confirmar mi plan de membresía docente (Elegir 10% por clase, $50.000 mensual o Plan Beca).`
-              );
-            }}
+            onClick={() => setIsMembershipModalOpen(true)}
             className="w-full md:w-auto px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center space-x-1.5"
           >
             <span>👑 Elegir / Modificar Mi Plan</span>
@@ -967,6 +1019,161 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
         )}
       </div>
       </>
+      )}
+
+      {/* 👑 Modal de Selección de Plan de Membresía Docente */}
+      {isMembershipModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsMembershipModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="space-y-1">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold">
+                <span>Planes de Membresía Guardia Docente</span>
+              </div>
+              <h2 className="text-2xl font-extrabold text-white tracking-tight">Elegí tu Plan de Trabajo</h2>
+              <p className="text-xs text-slate-400">
+                Podés cambiar o actualizar tu plan durante o al finalizar tu prueba gratuita de 10 días.
+              </p>
+            </div>
+
+            {/* Cards Grid of 3 Plans */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Plan 1: 10% por clase */}
+              <div
+                onClick={() => handleSelectPlan('COMMISSION_10')}
+                className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+                  currentMembershipType === 'COMMISSION_10'
+                    ? 'bg-brand-600/20 border-brand-500 shadow-lg shadow-brand-500/20 ring-1 ring-brand-500'
+                    : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-300 flex items-center justify-center font-bold text-sm">
+                    📊
+                  </div>
+                  <h3 className="font-bold text-white text-sm">10% por Clase</h3>
+                  <p className="text-[11px] text-slate-400 leading-normal">
+                    Sin costo ni cuota fija. Pagás solo el 10% de cada clase vendida. Si no das clases, pagás $0.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                    currentMembershipType === 'COMMISSION_10'
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {currentMembershipType === 'COMMISSION_10' ? '✓ Plan Activo' : 'Elegir 10%'}
+                </button>
+              </div>
+
+              {/* Plan 2: $50.000 Fijo Mensual */}
+              <div
+                onClick={() => handleSelectPlan('MONTHLY_FIXED')}
+                className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+                  currentMembershipType === 'MONTHLY_FIXED'
+                    ? 'bg-emerald-600/20 border-emerald-500 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500'
+                    : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-sm">
+                    💎
+                  </div>
+                  <h3 className="font-bold text-white text-sm">$50.000 / Mes</h3>
+                  <p className="text-[11px] text-slate-400 leading-normal">
+                    Cuota fija mensual con <strong className="text-emerald-300">0% de comisión</strong> por clase. Clases ilimitadas.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                    currentMembershipType === 'MONTHLY_FIXED'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {currentMembershipType === 'MONTHLY_FIXED' ? '✓ Plan Activo' : 'Elegir $50k / Mes'}
+                </button>
+              </div>
+
+              {/* Plan 3: Beca VIP */}
+              <div
+                onClick={() => handleSelectPlan('LIFETIME_FREE')}
+                className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+                  currentMembershipType === 'LIFETIME_FREE'
+                    ? 'bg-purple-600/20 border-purple-500 shadow-lg shadow-purple-500/20 ring-1 ring-purple-500'
+                    : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-sm">
+                    👑
+                  </div>
+                  <h3 className="font-bold text-white text-sm">Plan Beca VIP</h3>
+                  <p className="text-[11px] text-slate-400 leading-normal">
+                    Exención total de costo ($0 y 0% comisión) otorgado por la administración para docentes VIP.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                    currentMembershipType === 'LIFETIME_FREE'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {currentMembershipType === 'LIFETIME_FREE' ? '✓ Beca Otorgada' : 'Solicitar Beca'}
+                </button>
+              </div>
+            </div>
+
+            {/* Formulario de Carga de Comprobante si es $50k Mensual */}
+            {currentMembershipType === 'MONTHLY_FIXED' && (
+              <form onSubmit={handleUploadMonthlyPayment} className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/30 space-y-3">
+                <h4 className="font-bold text-white text-xs flex items-center gap-2">
+                  <span>💳 Abonar o Subir Comprobante de Membresía Mensual ($50.000 ARS)</span>
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Transferí <strong className="text-amber-400 font-mono">$50.000 ARS</strong> al Alias <strong className="text-emerald-300 font-mono">guardia.nocturna.mp</strong> y adjuntá tu N° de transacción o comprobante:
+                </p>
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="N° de Operación / Comprobante (Ej: 948271034)"
+                    value={monthlyReceiptRef}
+                    onChange={(e) => setMonthlyReceiptRef(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmittingMonthlyReceipt || !monthlyReceiptRef.trim()}
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg transition-all disabled:opacity-40"
+                  >
+                    {isSubmittingMonthlyReceipt ? 'Enviando...' : '🚀 Enviar Comprobante de $50.000 para Aprobación'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <button
+              onClick={() => setIsMembershipModalOpen(false)}
+              className="w-full py-2 text-center text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

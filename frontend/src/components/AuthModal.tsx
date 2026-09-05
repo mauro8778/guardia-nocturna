@@ -131,6 +131,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <span>Docente / Profesor</span>
                   </button>
                 </div>
+
+                {role === 'ADMIN' && (
+                  <div className="mt-2.5 p-3 rounded-2xl bg-purple-950/70 border border-purple-500/40 text-purple-200 text-xs space-y-1 shadow-lg">
+                    <p className="font-bold flex items-center gap-1 text-purple-300">
+                      🎁 <span>Prueba Gratuita por Tiempo Limitado: 10 Días Gratis</span>
+                    </p>
+                    <p className="text-[11px] text-slate-300 leading-normal">
+                      Registrate sin costo inicial. Tu cuenta incluye 10 días para probar la plataforma dictando clases presenciales o virtuales. Al finalizar la prueba podés elegir tu plan: <strong className="text-amber-300">10% por clase</strong> o <strong className="text-emerald-300">$50.000/mes fijo (0% comisión)</strong>.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
