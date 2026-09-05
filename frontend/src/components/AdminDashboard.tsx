@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi, appointmentsApi, paymentsApi } from '../services/api';
-import { User, Appointment, AdminMetrics, AppointmentStatus, FinancialsSummary } from '../types';
+import { User, Appointment, AdminMetrics, AppointmentStatus, FinancialsSummary, TeacherMembershipPayment } from '../types';
 import {
   Users,
   DollarSign,
@@ -16,6 +16,9 @@ import {
   CreditCard,
   Send,
   FileCheck,
+  Eye,
+  FileText,
+  X,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -28,6 +31,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
   const [pendingDocentes, setPendingDocentes] = useState<User[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [financials, setFinancials] = useState<FinancialsSummary | null>(null);
+  const [membershipPayments, setMembershipPayments] = useState<TeacherMembershipPayment[]>([]);
+  const [selectedReceipt, setSelectedReceipt] = useState<{ title: string; url?: string; ref?: string } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'METRICS' | 'FINANCIALS' | 'DOCENTES' | 'TURNOS'>('METRICS');
   const [payoutInputs, setPayoutInputs] = useState<Record<string, string>>({});
@@ -40,18 +45,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [mRes, dRes, pRes, aRes, fRes] = await Promise.all([
+      const [mRes, dRes, pRes, aRes, fRes, memRes] = await Promise.all([
         adminApi.getMetrics(),
         adminApi.getAllDocentes(),
         adminApi.getPendingDocentes(),
         appointmentsApi.getAll(undefined, undefined, statusFilter || undefined, searchTerm || undefined),
         paymentsApi.getFinancials(),
+        adminApi.getMembershipPayments(),
       ]);
       setMetrics(mRes);
       setDocentes(dRes);
       setPendingDocentes(pRes);
       setAppointments(aRes);
       setFinancials(fRes);
+      setMembershipPayments(memRes || []);
     } catch (error) {
       console.error('Error al cargar datos del Administrador:', error);
     } finally {
@@ -119,6 +126,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
       loadData();
     } catch (err) {
       console.error('Error al actualizar membresía:', err);
+    }
+  };
+
+  const handleApproveMembershipPayment = async (paymentId: string) => {
+    try {
+      await adminApi.approveMembershipPayment(paymentId);
+      setPayoutStatusMsg('¡Comprobante de Membresía Mensual ($50.000) aprobado exitosamente!');
+      setTimeout(() => setPayoutStatusMsg(null), 4000);
+      loadData();
+    } catch (err) {
+      console.error('Error al aprobar pago de membresía:', err);
     }
   };
 
@@ -442,6 +460,70 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 );
               })}
             </div>
+
+            {/* Comprobantes de Membresía Mensual ($50.000 ARS) */}
+            {membershipPayments.length > 0 && (
+              <div className="glass-panel p-4 sm:p-6 rounded-3xl border border-emerald-500/40 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-emerald-400">
+                    <CreditCard className="w-5 h-5 shrink-0" />
+                    <h3 className="text-base sm:text-lg font-bold text-white">
+                      Comprobantes de Membresía Mensual ($50.000 ARS) ({membershipPayments.length})
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-slate-800">
+                  {membershipPayments.map((pmt) => (
+                    <div key={pmt.id} className="py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <p className="font-bold text-white text-sm">{pmt.teacherName}</p>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                            pmt.status === 'APPROVED'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          }`}>
+                            {pmt.status === 'APPROVED' ? '✓ Aprobado' : '⏳ Pendiente Revisión'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5">
+                          Ref/N° Op: <span className="text-emerald-400 font-bold">{pmt.receiptRef || 'Sin N° de Operación'}</span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2 w-full sm:w-auto">
+                        {pmt.receiptUrl ? (
+                          <button
+                            onClick={() => setSelectedReceipt({
+                              title: `Comprobante $50k - ${pmt.teacherName}`,
+                              url: pmt.receiptUrl,
+                              ref: pmt.receiptRef,
+                            })}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center space-x-1.5 border border-slate-700"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-brand-400" />
+                            <span>Ver Adjunto (Foto/PDF)</span>
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-slate-500 italic">Solo N° de Transacción</span>
+                        )}
+
+                        {pmt.status !== 'APPROVED' && (
+                          <button
+                            onClick={() => handleApproveMembershipPayment(pmt.id)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md transition flex items-center space-x-1"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Aprobar $50k</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -789,6 +871,66 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Previsualización de Comprobante (Imagen / PDF) */}
+      {selectedReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-3xl w-full space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="font-extrabold text-white text-base flex items-center gap-2">
+                  <FileCheck className="w-5 h-5 text-emerald-400" />
+                  <span>{selectedReceipt.title}</span>
+                </h3>
+                {selectedReceipt.ref && (
+                  <p className="text-xs font-mono text-emerald-400 mt-0.5">
+                    N° de Operación / Ref: {selectedReceipt.ref}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedReceipt(null)}
+                className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-y-auto flex items-center justify-center bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              {selectedReceipt.url ? (
+                selectedReceipt.url.startsWith('data:application/pdf') || selectedReceipt.url.toLowerCase().endsWith('.pdf') ? (
+                  <iframe
+                    src={selectedReceipt.url}
+                    className="w-full h-[60vh] rounded-xl border border-slate-800"
+                    title="Visualizador PDF Comprobante"
+                  />
+                ) : (
+                  <img
+                    src={selectedReceipt.url}
+                    alt="Comprobante"
+                    className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg border border-slate-800"
+                  />
+                )
+              ) : (
+                <div className="text-center py-10 text-slate-400">
+                  <FileText className="w-12 h-12 text-slate-600 mx-auto mb-2" />
+                  <p className="text-sm font-semibold">Este pago fue enviado solo con N° de Referencia/Operación.</p>
+                  <p className="text-xs font-mono text-emerald-400 mt-1">{selectedReceipt.ref || 'Sin referencia'}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setSelectedReceipt(null)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+              >
+                Cerrar Previsualización
+              </button>
+            </div>
           </div>
         </div>
       )}

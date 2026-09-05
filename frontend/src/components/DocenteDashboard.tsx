@@ -19,6 +19,8 @@ import {
   Save,
   Check,
   X,
+  Paperclip,
+  FileText,
 } from 'lucide-react';
 import { Appointment, AppointmentStatus, DocenteAvailability } from '../types';
 import { appointmentsApi, availabilityApi, adminApi } from '../services/api';
@@ -60,8 +62,28 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
     (user?.membershipType as any) === 'MONTHLY_FIXED' ? 'MONTHLY_FIXED' : 'COMMISSION_10'
   );
   const [monthlyReceiptRef, setMonthlyReceiptRef] = useState<string>('');
-  const [monthlyFile, setMonthlyFile] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [monthlyFile, setMonthlyFile] = useState<{ name: string; dataUrl: string; type: string } | null>(null);
   const [isSubmittingMonthlyReceipt, setIsSubmittingMonthlyReceipt] = useState<boolean>(false);
+
+  const handleMonthlyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('El archivo no debe superar los 10MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setMonthlyFile({
+        name: file.name,
+        dataUrl: reader.result as string,
+        type: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSelectPlan = async (membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED') => {
     if (!user) return;
@@ -89,10 +111,12 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
       await adminApi.submitMembershipPayment({
         teacherId,
         teacherName: user.fullName,
-        receiptRef: monthlyReceiptRef || monthlyFile?.name || 'Comprobante Mensual $50k',
+        receiptRef: monthlyReceiptRef.trim() || monthlyFile?.name || 'Comprobante Subido ($50k)',
         receiptUrl: monthlyFile?.dataUrl || undefined,
       });
-      showToast('¡Comprobante de Membresía Mensual ($50.000) enviado para aprobación!');
+      showToast('¡Comprobante de Membresía Mensual ($50.000) enviado con éxito para aprobación!');
+      setMonthlyReceiptRef('');
+      setMonthlyFile(null);
       setIsMembershipModalOpen(false);
     } catch (err) {
       console.error('Error al enviar comprobante:', err);
@@ -1108,21 +1132,85 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
                   <span>💳 Abonar o Subir Comprobante de Membresía Mensual ($50.000 ARS)</span>
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  Transferí <strong className="text-amber-400 font-mono">$50.000 ARS</strong> al Alias <strong className="text-emerald-300 font-mono">guardia.nocturna.mp</strong> y adjuntá tu N° de transacción o comprobante:
+                  Transferí <strong className="text-amber-400 font-mono">$50.000 ARS</strong> al Alias <strong className="text-emerald-300 font-mono">guardia.nocturna.mp</strong> y podés escribir tu N° de transacción y/o adjuntar tu comprobante (Foto o PDF):
                 </p>
 
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="N° de Operación / Comprobante (Ej: 948271034)"
-                    value={monthlyReceiptRef}
-                    onChange={(e) => setMonthlyReceiptRef(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500"
-                  />
+                <div className="space-y-3">
+                  {/* Opción 1: N° de Operación / Comprobante */}
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1">
+                      1. N° de Operación / Referencia (Opcional si adjuntás archivo)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="N° de Operación (Ej: 948271034)"
+                      value={monthlyReceiptRef}
+                      onChange={(e) => setMonthlyReceiptRef(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  {/* Opción 2: Adjuntar Archivo (Imagen / PDF) */}
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1">
+                      2. Adjuntar Captura (JPG, PNG, WEBP) o Documento PDF
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleMonthlyFileChange}
+                      className="hidden"
+                      id="monthly-membership-file-input"
+                    />
+
+                    {!monthlyFile ? (
+                      <label
+                        htmlFor="monthly-membership-file-input"
+                        className="cursor-pointer border-2 border-dashed border-slate-800 hover:border-emerald-500/50 bg-slate-900/60 hover:bg-slate-900 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all group"
+                      >
+                        <Paperclip className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mb-1 transition-colors" />
+                        <span className="text-xs font-semibold text-slate-300 group-hover:text-white">
+                          Adjuntar Imagen o PDF de Comprobante
+                        </span>
+                        <span className="text-[10px] text-slate-500 mt-0.5">
+                          Imágenes (JPG, PNG, WEBP) o PDFs (Máx. 10MB)
+                        </span>
+                      </label>
+                    ) : (
+                      <div className="flex items-center justify-between bg-slate-900 border border-emerald-500/50 rounded-xl p-2.5">
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          {monthlyFile.type.includes('pdf') || monthlyFile.name.toLowerCase().endsWith('.pdf') ? (
+                            <FileText className="w-8 h-8 text-rose-400 shrink-0" />
+                          ) : (
+                            <img
+                              src={monthlyFile.dataUrl}
+                              alt="Previsualización"
+                              className="w-10 h-10 object-cover rounded-lg border border-slate-700 shrink-0"
+                            />
+                          )}
+                          <div className="truncate">
+                            <p className="text-xs font-bold text-white truncate">{monthlyFile.name}</p>
+                            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                              ✓ {monthlyFile.type.includes('pdf') || monthlyFile.name.toLowerCase().endsWith('.pdf') ? 'Documento PDF Listo' : 'Imagen Adjuntada'}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMonthlyFile(null)}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors shrink-0"
+                          title="Eliminar archivo adjunto"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={isSubmittingMonthlyReceipt || !monthlyReceiptRef.trim()}
-                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg transition-all disabled:opacity-40"
+                    disabled={isSubmittingMonthlyReceipt || (!monthlyReceiptRef.trim() && !monthlyFile)}
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-950/40 transition-all disabled:opacity-40"
                   >
                     {isSubmittingMonthlyReceipt ? 'Enviando...' : '🚀 Enviar Comprobante de $50.000 para Aprobación'}
                   </button>
