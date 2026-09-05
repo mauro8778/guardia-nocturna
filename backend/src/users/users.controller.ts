@@ -5,56 +5,40 @@ import {
   Param,
   Body,
   UseGuards,
-  ForbiddenException,
-  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  private checkAdmin(req: { user: { role: string; email: string } }) {
-    if (req.user.role !== 'ADMIN' && req.user.email !== 'maurodiaz8778@gmail.com') {
-      throw new ForbiddenException('Acceso restringido a administradores');
-    }
-  }
-
   @Get('admin/metrics')
-  async getMetrics(@Request() req: { user: { role: string; email: string } }) {
-    this.checkAdmin(req);
+  async getMetrics() {
     return this.usersService.getAdminMetrics();
   }
 
   @Get('admin/docentes')
-  async getAllDocentes(@Request() req: { user: { role: string; email: string } }) {
-    this.checkAdmin(req);
+  async getAllDocentes() {
     return this.usersService.getAllDocentes();
   }
 
   @Get('admin/pending-docentes')
-  async getPendingDocentes(@Request() req: { user: { role: string; email: string } }) {
-    this.checkAdmin(req);
+  async getPendingDocentes() {
     return this.usersService.getPendingDocentes();
   }
 
   @Patch('admin/docentes/:id/approve')
-  async approveDocente(
-    @Param('id') id: string,
-    @Request() req: { user: { role: string; email: string } },
-  ) {
-    this.checkAdmin(req);
+  async approveDocente(@Param('id') id: string) {
     return this.usersService.approveDocente(id);
   }
 
   @Patch('admin/docentes/:id/reject')
-  async rejectDocente(
-    @Param('id') id: string,
-    @Request() req: { user: { role: string; email: string } },
-  ) {
-    this.checkAdmin(req);
+  async rejectDocente(@Param('id') id: string) {
     return this.usersService.rejectDocente(id);
   }
 
@@ -62,9 +46,7 @@ export class UsersController {
   async updateCommission(
     @Param('id') id: string,
     @Body() body: { commissionRate?: number; applyCommission?: boolean },
-    @Request() req: { user: { role: string; email: string } },
   ) {
-    this.checkAdmin(req);
     return this.usersService.updateDocenteCommission(id, body.commissionRate, body.applyCommission);
   }
 }

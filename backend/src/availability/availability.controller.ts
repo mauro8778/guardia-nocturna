@@ -1,7 +1,9 @@
-import { Controller, Get, Put, Body, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
 import { AvailabilityService } from './availability.service';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('availability')
 export class AvailabilityController {
@@ -21,25 +23,21 @@ export class AvailabilityController {
   }
 
   // Endpoint autenticado para obtener configuración del docente actual
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('TEACHER', 'ADMIN')
   @Get('me')
   async getMyAvailability(@Request() req: { user: { userId: string; role: string; fullName: string } }) {
-    if (req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Solo los profesores pueden acceder a su configuración');
-    }
     return this.availabilityService.getAvailabilityByTeacher(req.user.userId, req.user.fullName);
   }
 
   // Endpoint autenticado para actualizar la configuración propia del docente
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('TEACHER', 'ADMIN')
   @Put('me')
   async updateMyAvailability(
     @Request() req: { user: { userId: string; role: string; fullName: string } },
     @Body() dto: UpdateAvailabilityDto,
   ) {
-    if (req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Solo los profesores pueden cambiar su configuración');
-    }
     return this.availabilityService.updateAvailabilityByTeacher(req.user.userId, dto, req.user.fullName);
   }
 }

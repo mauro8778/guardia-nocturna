@@ -5,11 +5,12 @@ import {
   Body,
   UseGuards,
   Request,
-  ForbiddenException,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { PaymentsService, PreferenceResponse, FinancialsSummary } from './payments.service';
 import { CreatePreferenceDto } from './dto/create-preference.dto';
 import { ProcessPayoutDto } from './dto/process-payout.dto';
@@ -25,12 +26,6 @@ interface RequestWithUser extends Request {
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
-
-  private checkAdmin(req: RequestWithUser) {
-    if (req.user.role !== 'ADMIN' && req.user.email !== 'maurodiaz8778@gmail.com') {
-      throw new ForbiddenException('Acceso restringido a administradores');
-    }
-  }
 
   @UseGuards(JwtAuthGuard)
   @Post('create-preference')
@@ -61,22 +56,19 @@ export class PaymentsController {
     return this.paymentsService.handleWebhook(body);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get('financials')
-  async getFinancialsSummary(
-    @Request() req: RequestWithUser,
-  ): Promise<FinancialsSummary> {
-    this.checkAdmin(req);
+  async getFinancialsSummary(): Promise<FinancialsSummary> {
     return this.paymentsService.getFinancialsSummary();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Post('process-payout')
   async processPayout(
     @Body() dto: ProcessPayoutDto,
-    @Request() req: RequestWithUser,
   ): Promise<Record<string, unknown>> {
-    this.checkAdmin(req);
     return this.paymentsService.processPayout(dto);
   }
 }
