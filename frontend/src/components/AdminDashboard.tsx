@@ -1,0 +1,601 @@
+import React, { useState, useEffect } from 'react';
+import { adminApi, appointmentsApi, paymentsApi } from '../services/api';
+import { User, Appointment, AdminMetrics, AppointmentStatus, FinancialsSummary } from '../types';
+import {
+  Users,
+  DollarSign,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Search,
+  ShieldCheck,
+  Percent,
+  RefreshCw,
+  MessageSquare,
+  AlertTriangle,
+  CreditCard,
+  Send,
+  FileCheck,
+} from 'lucide-react';
+
+interface AdminDashboardProps {
+  onOpenWhatsApp: (appt: Appointment | null, customMsg?: string) => void;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }) => {
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [docentes, setDocentes] = useState<User[]>([]);
+  const [pendingDocentes, setPendingDocentes] = useState<User[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [financials, setFinancials] = useState<FinancialsSummary | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'METRICS' | 'FINANCIALS' | 'DOCENTES' | 'TURNOS'>('METRICS');
+  const [payoutInputs, setPayoutInputs] = useState<Record<string, string>>({});
+  const [payoutStatusMsg, setPayoutStatusMsg] = useState<string | null>(null);
+
+  // Search & Filter state
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [mRes, dRes, pRes, aRes, fRes] = await Promise.all([
+        adminApi.getMetrics(),
+        adminApi.getAllDocentes(),
+        adminApi.getPendingDocentes(),
+        appointmentsApi.getAll(undefined, undefined, statusFilter || undefined, searchTerm || undefined),
+        paymentsApi.getFinancials(),
+      ]);
+      setMetrics(mRes);
+      setDocentes(dRes);
+      setPendingDocentes(pRes);
+      setAppointments(aRes);
+      setFinancials(fRes);
+    } catch (error) {
+      console.error('Error al cargar datos del Administrador:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 15000); // Auto-refresh cada 15s
+    return () => clearInterval(interval);
+  }, [statusFilter, searchTerm]);
+
+  const handleApproveDocente = async (id: string) => {
+    try {
+      await adminApi.approveDocente(id);
+      loadData();
+    } catch (error) {
+      console.error('Error al aprobar docente:', error);
+    }
+  };
+
+  const handleRejectDocente = async (id: string) => {
+    try {
+      await adminApi.rejectDocente(id);
+      loadData();
+    } catch (error) {
+      console.error('Error al rechazar docente:', error);
+    }
+  };
+
+  const handleToggleCommission = async (docente: User) => {
+    try {
+      await adminApi.updateCommission(docente.id, {
+        applyCommission: !docente.applyCommission,
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error al actualizar comisión:', error);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: AppointmentStatus) => {
+    try {
+      await appointmentsApi.updateStatus(id, newStatus);
+      loadData();
+    } catch (error) {
+      console.error('Error al actualizar estado:', error);
+    }
+  };
+
+  const handleExecutePayout = async (teacherId: string, amount: number) => {
+    if (amount <= 0) return;
+    try {
+      await paymentsApi.processPayout({
+        teacherId,
+        amount,
+        reference: `LIQ-${Date.now().toString().slice(-6)}`,
+      });
+      setPayoutStatusMsg(`¡Liquidación de $${amount.toLocaleString('es-AR')} registrada exitosamente!`);
+      setTimeout(() => setPayoutStatusMsg(null), 4000);
+      loadData();
+    } catch (err) {
+      console.error('Error al procesar liquidación:', err);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Toast Notification */}
+      {payoutStatusMsg && (
+        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
+          <div className="glass-panel px-4 py-3 rounded-2xl border border-emerald-500/40 shadow-2xl flex items-center space-x-3 text-xs text-white">
+            <span className="font-semibold text-emerald-300">{payoutStatusMsg}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Header Admin */}
+      <div className="glass-panel p-6 rounded-3xl border border-brand-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-semibold mb-2">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Panel SuperAdmin Control Total</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+            Dashboard de Administración
+          </h1>
+          <p className="text-xs text-slate-400">
+            Control global de la plataforma, pasarela de cobros, retención del 10% y liquidación a docentes.
+          </p>
+        </div>
+
+        <button
+          onClick={loadData}
+          className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium transition"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          <span>Actualizar Datos</span>
+        </button>
+      </div>
+
+      {/* Tabs Nav */}
+      <div className="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('METRICS')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+            activeTab === 'METRICS'
+              ? 'bg-brand-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <DollarSign className="w-3.5 h-3.5" />
+          <span>Métricas & Ganancias</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('FINANCIALS')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+            activeTab === 'FINANCIALS'
+              ? 'bg-emerald-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <CreditCard className="w-3.5 h-3.5 text-emerald-300" />
+          <span>Finanzas & Liquidaciones</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('DOCENTES')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 relative ${
+            activeTab === 'DOCENTES'
+              ? 'bg-brand-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Gestión de Docentes</span>
+          {pendingDocentes.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold text-[10px]">
+              {pendingDocentes.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('TURNOS')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+            activeTab === 'TURNOS'
+              ? 'bg-brand-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Control de Turnos</span>
+        </button>
+      </div>
+
+      {/* Tab: METRICAS */}
+      {activeTab === 'METRICS' && metrics && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="glass-panel p-5 rounded-2xl border border-emerald-500/30 space-y-1">
+              <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                <span>Recaudación Bruta</span>
+                <DollarSign className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-white">
+                ${metrics.totalGrossRevenue.toLocaleString()} ARS
+              </p>
+              <p className="text-[10px] text-emerald-400 font-medium">
+                {metrics.confirmedCount} turnos confirmados
+              </p>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-brand-500/30 space-y-1">
+              <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                <span>Ganancia Retención Plataforma (10%)</span>
+                <Percent className="w-4 h-4 text-brand-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-brand-300">
+                ${metrics.totalPlatformFee.toLocaleString()} ARS
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">
+                Comisiones retenidas a docentes
+              </p>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-sky-500/30 space-y-1">
+              <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                <span>Neto a Pagar a Docentes (90%)</span>
+                <Users className="w-4 h-4 text-sky-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-sky-300">
+                ${metrics.totalTeacherNet.toLocaleString()} ARS
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">
+                {metrics.totalDocentes} docentes registrados
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Tab: FINANCIALS & PAYOUTS */}
+      {activeTab === 'FINANCIALS' && financials && (
+        <div className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="glass-panel p-5 rounded-2xl border border-emerald-500/30 space-y-1">
+              <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                <span>Ingreso Bruto Total</span>
+                <DollarSign className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-white font-mono">
+                ${financials.totalGrossRevenue.toLocaleString('es-AR')} ARS
+              </p>
+              <span className="text-[10px] text-emerald-400 font-semibold">Transferencias y Comprobantes Validados</span>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-amber-500/40 space-y-1">
+              <div className="flex justify-between items-center text-amber-300 text-xs font-medium">
+                <span>Ganancia Neta Admin (10%)</span>
+                <Percent className="w-4 h-4 text-amber-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-amber-300 font-mono">
+                ${financials.totalPlatformFee.toLocaleString('es-AR')} ARS
+              </p>
+              <span className="text-[10px] text-amber-200">Retención neta de la plataforma</span>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-sky-500/40 space-y-1">
+              <div className="flex justify-between items-center text-sky-300 text-xs font-medium">
+                <span>Saldo Pendiente a Docentes</span>
+                <Clock className="w-4 h-4 text-sky-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-sky-300 font-mono">
+                ${financials.pendingBalanceToTeachers.toLocaleString('es-AR')} ARS
+              </p>
+              <span className="text-[10px] text-sky-200">Total a transferir / liquidar</span>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-slate-700 space-y-1">
+              <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                <span>Total Liquidado a Docentes</span>
+                <FileCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-extrabold text-slate-200 font-mono">
+                ${financials.totalPaidOutToTeachers.toLocaleString('es-AR')} ARS
+              </p>
+              <span className="text-[10px] text-slate-400">Transferencias registradas</span>
+            </div>
+          </div>
+
+          {/* Tabla de Balances y Liquidaciones por Docente */}
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-emerald-400" />
+                  Estado de Saldo y Liquidaciones por Profesor
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Visualizá las ganancias netas de cada docente, sus comisiones del 10% y registrá pagos transferidos.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th className="py-3.5 px-4">Profesor / Docente</th>
+                    <th className="py-3.5 px-4">Recaudado Bruto</th>
+                    <th className="py-3.5 px-4">Comisión Plataforma (10%)</th>
+                    <th className="py-3.5 px-4">Ganancia Neta Docente</th>
+                    <th className="py-3.5 px-4">Total Liquidado</th>
+                    <th className="py-3.5 px-4">Saldo Pendiente 🟢</th>
+                    <th className="py-3.5 px-4 text-right">Registrar Payout / Pago</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {financials.teachersBalances.map((tReport) => {
+                    const inputVal = payoutInputs[tReport.teacherId] ?? tReport.pendingBalance.toString();
+                    return (
+                      <tr key={tReport.teacherId} className="hover:bg-slate-900/60 transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-white">{tReport.teacherName}</td>
+                        <td className="py-3.5 px-4 font-mono font-semibold text-slate-300">${tReport.totalGrossRevenue.toLocaleString('es-AR')}</td>
+                        <td className="py-3.5 px-4 font-mono text-amber-400 font-bold">${tReport.platformFeeAccumulated.toLocaleString('es-AR')}</td>
+                        <td className="py-3.5 px-4 font-mono text-sky-400 font-bold">${tReport.totalTeacherNetEarned.toLocaleString('es-AR')}</td>
+                        <td className="py-3.5 px-4 font-mono text-slate-400">${tReport.totalPaidOut.toLocaleString('es-AR')}</td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-extrabold ${
+                            tReport.pendingBalance > 0
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                              : 'bg-slate-800 text-slate-500'
+                          }`}>
+                            ${tReport.pendingBalance.toLocaleString('es-AR')}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <div className="relative w-28">
+                              <span className="absolute left-2.5 top-1.5 text-slate-500 font-mono text-xs">$</span>
+                              <input
+                                type="number"
+                                value={inputVal}
+                                onChange={(e) => setPayoutInputs({ ...payoutInputs, [tReport.teacherId]: e.target.value })}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-6 pr-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleExecutePayout(tReport.teacherId, Number(inputVal))}
+                              disabled={Number(inputVal) <= 0}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center space-x-1 shadow-md shadow-emerald-600/20 transition-all disabled:opacity-40"
+                              title="Registrar liquidación al docente"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Liquidar</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: DOCENTES */}
+      {activeTab === 'DOCENTES' && (
+        <div className="space-y-6">
+          {/* Solicitudes Pendientes */}
+          {pendingDocentes.length > 0 && (
+            <div className="glass-panel p-6 rounded-3xl border border-amber-500/40 space-y-4">
+              <div className="flex items-center space-x-2 text-amber-400">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="text-lg font-bold text-white">
+                  Solicitudes de Registro de Docentes Pendientes ({pendingDocentes.length})
+                </h3>
+              </div>
+
+              <div className="divide-y divide-slate-800">
+                {pendingDocentes.map((docente) => (
+                  <div key={docente.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <p className="font-bold text-white text-sm">{docente.fullName}</p>
+                      <p className="text-xs text-slate-400">{docente.email} • Tel: {docente.phone || 'N/A'}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleApproveDocente(docente.id)}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-1"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>Aprobar 🟢</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleRejectDocente(docente.id)}
+                        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition"
+                      >
+                        <span>Rechazar 🔴</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Listado Completo de Docentes y Control de Retención 10% */}
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
+            <h3 className="text-lg font-bold text-white">Listado y Configuración de Docentes</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px]">
+                  <tr>
+                    <th className="p-3">Docente</th>
+                    <th className="p-3">Email / Teléfono</th>
+                    <th className="p-3">Estado Aprobación</th>
+                    <th className="p-3">Retención 10% Plataforma</th>
+                    <th className="p-3">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {docentes.map((docente) => (
+                    <tr key={docente.id} className="hover:bg-slate-900/40">
+                      <td className="p-3 font-semibold text-white">{docente.fullName}</td>
+                      <td className="p-3 text-slate-400">{docente.email}<br/>{docente.phone}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          docente.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                          docente.status === 'PENDING_APPROVAL' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                          'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                        }`}>
+                          {docente.status || 'APPROVED'}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          onClick={() => handleToggleCommission(docente)}
+                          className={`px-3 py-1 rounded-xl text-xs font-semibold transition ${
+                            docente.applyCommission !== false
+                              ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40 hover:bg-brand-500/30'
+                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                          }`}
+                        >
+                          {docente.applyCommission !== false ? '🟢 Retención 10% Activa' : '⚪ Sin Retención (0%)'}
+                        </button>
+                      </td>
+                      <td className="p-3 space-x-2">
+                        {docente.status !== 'APPROVED' && (
+                          <button
+                            onClick={() => handleApproveDocente(docente.id)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600/80 text-white text-[10px] font-bold"
+                          >
+                            Aprobar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: TURNOS */}
+      {activeTab === 'TURNOS' && (
+        <div className="space-y-4">
+          {/* Barra de Búsqueda y Chips de Filtro */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Buscar por alumno, materia, ref..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="flex space-x-2 overflow-x-auto w-full sm:w-auto">
+              <button
+                onClick={() => setStatusFilter('')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  statusFilter === '' ? 'bg-slate-700 text-white' : 'bg-slate-900 text-slate-400'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setStatusFilter('CONFIRMED_PAID')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  statusFilter === 'CONFIRMED_PAID' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400'
+                }`}
+              >
+                🟢 Confirmados
+              </button>
+              <button
+                onClick={() => setStatusFilter('RECEIPT_SUBMITTED')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  statusFilter === 'RECEIPT_SUBMITTED' ? 'bg-amber-600 text-white' : 'bg-slate-900 text-slate-400'
+                }`}
+              >
+                🟡 Comprobantes
+              </button>
+              <button
+                onClick={() => setStatusFilter('DRAFT_UNPAID')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  statusFilter === 'DRAFT_UNPAID' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'
+                }`}
+              >
+                🟠 Borradores
+              </button>
+            </div>
+          </div>
+
+          {/* Tabla de Turnos */}
+          <div className="glass-panel p-6 rounded-3xl border border-slate-800 overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th className="p-3">Fecha / Hora</th>
+                  <th className="p-3">Materia</th>
+                  <th className="p-3">Alumno</th>
+                  <th className="p-3">Docente</th>
+                  <th className="p-3">Monto / Retención</th>
+                  <th className="p-3">Estado</th>
+                  <th className="p-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {appointments.map((appt) => (
+                  <tr key={appt.id} className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold text-white">{appt.date}<br/>{appt.startTime} hs</td>
+                    <td className="p-3 text-slate-200">{appt.subject}</td>
+                    <td className="p-3">{appt.studentName}</td>
+                    <td className="p-3 text-slate-400">{appt.teacherName}</td>
+                    <td className="p-3">
+                      <span className="font-bold text-white">${appt.totalAmount || 5000}</span>
+                      <span className="text-[10px] text-slate-500 block">Ret: ${appt.platformFee || 500}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        appt.status === 'CONFIRMED_PAID' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                        appt.status === 'RECEIPT_SUBMITTED' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                        'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40'
+                      }`}>
+                        {appt.status}
+                      </span>
+                    </td>
+                    <td className="p-3 space-x-2">
+                      {appt.status !== 'CONFIRMED_PAID' && (
+                        <button
+                          onClick={() => handleUpdateStatus(appt.id, 'CONFIRMED_PAID')}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-bold"
+                        >
+                          Confirmar 🟢
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onOpenWhatsApp(appt)}
+                        className="px-2 py-1 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 text-[10px] font-semibold"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

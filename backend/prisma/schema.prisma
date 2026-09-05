@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password        String
+  fullName        String
+  phone           String?
+  role            String   @default("STUDENT")
+  status          String   @default("APPROVED")
+  commissionRate  Float    @default(0.10)
+  applyCommission Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@map("users")
+}
+
+model Appointment {
+  id               String   @id @default(uuid())
+  date             String
+  startTime        String
+  endTime          String
+  subject          String
+  academicLevel    String?
+  specificTopics   String?
+  studyMaterialUrl String?
+  notes            String?
+  status           String   @default("DRAFT_UNPAID")
+  meetingUrl       String?
+  receiptRef       String?
+  receiptUrl       String?
+  teacherId        String   @default("default-teacher-id")
+  teacherName      String   @default("Prof. Mauro Díaz")
+  studentId        String
+  studentName      String
+  totalAmount      Int      @default(5000)
+  platformFee      Int      @default(500)
+  teacherNet       Int      @default(4500)
+  pricingType      String   @default("PER_HOUR")
+  createdAt        DateTime @default(now())
+
+  @@map("appointments")
+}
+
+model Availability {
+  id            String   @id @default(uuid())
+  teacherId     String   @unique @default("default-teacher-id")
+  teacherName   String   @default("Prof. Mauro Díaz")
+  teacherPhone  String   @default("5491133231465")
+  aliasMP       String   @default("guardia.nocturna.mp")
+  linkMP        String   @default("https://mpago.la/guardianocturna")
+  is24Hours     Boolean  @default(false)
+  startHour     Int      @default(8)
+  endHour       Int      @default(22)
+  availableDays String   @default("[1,2,3,4,5,6]")
+  subjects      String   @default("[\"Matemática / Álgebra\", \"Física I y II\", \"Programación & Algoritmos\", \"Química\", \"Inglés Técnico\"]")
+  hourlyRate    Int      @default(5000)
+  pricingType   String   @default("PER_HOUR")
+  subjectRates  String   @default("{}")
+  updatedAt     DateTime @updatedAt
+
+  @@map("availability")
+}
+
+model PaymentTransaction {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
+  mpPaymentId   String?  @unique
+  mpPreferenceId String?
+  paymentMethod String   @default("MERCADO_PAGO")
+  status        String   @default("APPROVED")
+  totalAmount   Int
+  platformFee   Int
+  teacherNet    Int
+  teacherId     String
+  studentId     String
+  createdAt     DateTime @default(now())
+
+  @@map("payment_transactions")
+}
+
+model TeacherPayout {
+  id          String    @id @default(uuid())
+  teacherId   String
+  teacherName String
+  amount      Int
+  status      String    @default("PAID")
+  reference   String?
+  paidAt      DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@map("teacher_payouts")
+}
+
+
