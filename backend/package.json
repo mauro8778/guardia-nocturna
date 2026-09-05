@@ -4,7 +4,7 @@
   "description": "Guardia Nocturna - NestJS Backend API",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "ts-node src/main.ts",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "test": "jest",
