@@ -10,6 +10,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { VirtualClassroomModal } from './components/VirtualClassroomModal';
 import { appointmentsApi, availabilityApi } from './services/api';
+import { socket } from './services/socket';
 import { Appointment, AppointmentStatus, DocenteAvailability } from './types';
 import { Sparkles, Info } from 'lucide-react';
 
@@ -105,6 +106,39 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     loadAllAvailabilities();
     loadAppointments(selectedDate, selectedTeacherId);
+
+    // Conexión y escucha de eventos WebSocket en tiempo real
+    const onCreated = (data: any) => {
+      showToast(`⚡ WebSockets: ${data.message || 'Nuevo turno reservado'}`);
+      loadAppointments(selectedDate, selectedTeacherId);
+    };
+
+    const onUpdated = (data: any) => {
+      showToast(`🟢 WebSockets: ${data.message || 'Turno actualizado'}`);
+      loadAppointments(selectedDate, selectedTeacherId);
+    };
+
+    const onReceipt = (data: any) => {
+      showToast(`📄 WebSockets: ${data.message || 'Comprobante recibido'}`);
+      loadAppointments(selectedDate, selectedTeacherId);
+    };
+
+    const onMembership = (data: any) => {
+      showToast(`👑 WebSockets: Membresía docente actualizada`);
+      loadAllAvailabilities();
+    };
+
+    socket.on('appointmentCreated', onCreated);
+    socket.on('appointmentUpdated', onUpdated);
+    socket.on('receiptSubmitted', onReceipt);
+    socket.on('membershipUpdated', onMembership);
+
+    return () => {
+      socket.off('appointmentCreated', onCreated);
+      socket.off('appointmentUpdated', onUpdated);
+      socket.off('receiptSubmitted', onReceipt);
+      socket.off('membershipUpdated', onMembership);
+    };
   }, [selectedDate, selectedTeacherId]);
 
   // Selección de slot disponible para reservar

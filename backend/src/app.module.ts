@@ -6,10 +6,12 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
     PrismaModule,
+    EventsModule,
     NotificationsModule,
     UsersModule,
     AuthModule,

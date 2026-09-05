@@ -11,6 +11,7 @@ interface AuthContextType {
   resetPassword: (email: string, newPassword: string) => Promise<void>;
   logout: () => void;
   toggleRole: () => void; // Permite probar la vista entre Alumno y Admin en demo
+  updateUser: (updatedData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,8 +75,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUser = (updatedData: Partial<User>) => {
+    if (user) {
+      setUser((prev) => (prev ? { ...prev, ...updatedData } : null));
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, resetPassword, logout, toggleRole }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, resetPassword, logout, toggleRole, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

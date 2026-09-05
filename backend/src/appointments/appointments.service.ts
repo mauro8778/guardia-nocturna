@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappGatewayService } from '../notifications/whatsapp-gateway.service';
+import { EventsGateway } from '../events/events.gateway';
 import { Appointment, Prisma } from '@prisma/client';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-status.dto';
@@ -13,6 +14,7 @@ export class AppointmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsappGateway: WhatsappGatewayService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async cleanupExpiredDrafts(): Promise<number> {
@@ -262,6 +264,7 @@ export class AppointmentsService {
       },
     });
 
+    this.eventsGateway.notifyAppointmentCreated(newAppointment);
     return newAppointment;
   }
 
@@ -284,6 +287,9 @@ export class AppointmentsService {
         status: 'RECEIPT_SUBMITTED',
       },
     });
+
+    // Notificación en tiempo real por WebSocket
+    this.eventsGateway.notifyReceiptSubmitted(saved);
 
     // Notificación automática por WhatsApp Gateway al docente
     const teacherAvail = await this.prisma.availability.findUnique({
@@ -324,6 +330,9 @@ export class AppointmentsService {
       where: { id },
       data: { status: updateDto.status },
     });
+
+    // Notificación en tiempo real por WebSocket
+    this.eventsGateway.notifyAppointmentUpdated(updated);
 
     if (updateDto.status === 'CONFIRMED_PAID') {
       const studentUser = await this.prisma.user.findUnique({ where: { id: updated.studentId } });

@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsGateway } from '../events/events.gateway';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -7,7 +8,10 @@ import * as bcrypt from 'bcrypt';
 export class UsersService implements OnModuleInit {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventsGateway: EventsGateway,
+  ) { }
 
   async onModuleInit() {
     await this.seedSuperAdmin();
@@ -159,7 +163,7 @@ export class UsersService implements OnModuleInit {
       if (statusToSet === 'EXEMPT') statusToSet = 'ACTIVE_PAID';
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
         membershipType,
@@ -167,6 +171,9 @@ export class UsersService implements OnModuleInit {
         applyCommission,
       },
     });
+
+    this.eventsGateway.notifyMembershipUpdated(updatedUser);
+    return updatedUser;
   }
 
   async submitMembershipPayment(
@@ -176,7 +183,7 @@ export class UsersService implements OnModuleInit {
     receiptUrl?: string,
   ) {
     const currentMonth = new Date().toISOString().slice(0, 7);
-    return this.prisma.teacherMembershipPayment.create({
+    const created = await this.prisma.teacherMembershipPayment.create({
       data: {
         teacherId,
         teacherName,
@@ -187,6 +194,9 @@ export class UsersService implements OnModuleInit {
         periodMonth: currentMonth,
       },
     });
+
+    this.eventsGateway.notifyMembershipUpdated(created);
+    return created;
   }
 
   async getMembershipPayments() {
@@ -207,13 +217,16 @@ export class UsersService implements OnModuleInit {
     });
 
     const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: payment.teacherId },
       data: {
         membershipStatus: 'ACTIVE_PAID',
         membershipPaidUntil: thirtyDaysFromNow,
       },
     });
+
+    this.eventsGateway.notifyMembershipUpdated(updatedUser);
+    return updatedUser;
   }
 
   async getAdminMetrics() {

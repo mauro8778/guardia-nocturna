@@ -47,7 +47,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
   onOpenClassroom,
   onOpenWhatsApp,
 }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -56,28 +56,20 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
 
   // Membership modal & selection state
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState<boolean>(false);
-  const [currentMembershipType, setCurrentMembershipType] = useState<'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE'>(
-    (user?.membershipType as any) || 'COMMISSION_10'
+  const [currentMembershipType, setCurrentMembershipType] = useState<'COMMISSION_10' | 'MONTHLY_FIXED'>(
+    (user?.membershipType as any) === 'MONTHLY_FIXED' ? 'MONTHLY_FIXED' : 'COMMISSION_10'
   );
   const [monthlyReceiptRef, setMonthlyReceiptRef] = useState<string>('');
   const [monthlyFile, setMonthlyFile] = useState<{ name: string; dataUrl: string } | null>(null);
   const [isSubmittingMonthlyReceipt, setIsSubmittingMonthlyReceipt] = useState<boolean>(false);
 
-  const handleSelectPlan = async (membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE') => {
+  const handleSelectPlan = async (membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED') => {
     if (!user) return;
     try {
-      if (membershipType === 'LIFETIME_FREE') {
-        onOpenWhatsApp(
-          null,
-          `¡Hola Admin Guardia Docente! Quisiera solicitar el Plan Beca Vitalicio (VIP) para mi cuenta docente (${user.email}).`
-        );
-        setIsMembershipModalOpen(false);
-        return;
-      }
-
       await adminApi.updateMyMembership({ teacherId: user.id, membershipType });
       setCurrentMembershipType(membershipType);
-      showToast(`¡Plan de Membresía actualizado exitosamente a ${
+      updateUser({ membershipType });
+      showToast(`¡Plan de Membresía guardado: ${
         membershipType === 'MONTHLY_FIXED' ? 'Fijo Mensual $50.000 (0% comisión)' : '10% por clase'
       }!`);
       setIsMembershipModalOpen(false);
@@ -1024,7 +1016,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
       {/* 👑 Modal de Selección de Plan de Membresía Docente */}
       {isMembershipModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <button
               onClick={() => setIsMembershipModalOpen(false)}
@@ -1038,101 +1030,71 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold">
                 <span>Planes de Membresía Guardia Docente</span>
               </div>
-              <h2 className="text-2xl font-extrabold text-white tracking-tight">Elegí tu Plan de Trabajo</h2>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Elegí tu Plan de Trabajo</h2>
               <p className="text-xs text-slate-400">
-                Podés cambiar o actualizar tu plan durante o al finalizar tu prueba gratuita de 10 días.
+                Podés cambiar o seleccionar tu plan durante o al finalizar tu prueba gratuita de 10 días.
               </p>
             </div>
 
-            {/* Cards Grid of 3 Plans */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Cards Grid of 2 Plans (10% por clase vs $50.000 / Mes) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Plan 1: 10% por clase */}
               <div
                 onClick={() => handleSelectPlan('COMMISSION_10')}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+                className={`p-4.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
                   currentMembershipType === 'COMMISSION_10'
                     ? 'bg-brand-600/20 border-brand-500 shadow-lg shadow-brand-500/20 ring-1 ring-brand-500'
                     : 'bg-slate-950 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <div className="space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-300 flex items-center justify-center font-bold text-sm">
+                  <div className="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-300 flex items-center justify-center font-bold text-base">
                     📊
                   </div>
-                  <h3 className="font-bold text-white text-sm">10% por Clase</h3>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    Sin costo ni cuota fija. Pagás solo el 10% de cada clase vendida. Si no das clases, pagás $0.
+                  <h3 className="font-bold text-white text-sm sm:text-base">10% por Clase</h3>
+                  <p className="text-xs text-slate-400 leading-normal">
+                    Sin costo ni cuota fija. Pagás solo el 10% de cada clase vendida. Si no dictás clases, pagás $0.
                   </p>
                 </div>
                 <button
                   type="button"
-                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all shadow-md ${
                     currentMembershipType === 'COMMISSION_10'
-                      ? 'bg-brand-600 text-white'
+                      ? 'bg-brand-600 text-white shadow-brand-600/30'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
-                  {currentMembershipType === 'COMMISSION_10' ? '✓ Plan Activo' : 'Elegir 10%'}
+                  {currentMembershipType === 'COMMISSION_10' ? '✓ Plan Activo' : 'Elegir 10% por Clase'}
                 </button>
               </div>
 
               {/* Plan 2: $50.000 Fijo Mensual */}
               <div
                 onClick={() => handleSelectPlan('MONTHLY_FIXED')}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+                className={`p-4.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
                   currentMembershipType === 'MONTHLY_FIXED'
                     ? 'bg-emerald-600/20 border-emerald-500 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500'
                     : 'bg-slate-950 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <div className="space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-sm">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-base">
                     💎
                   </div>
-                  <h3 className="font-bold text-white text-sm">$50.000 / Mes</h3>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    Cuota fija mensual con <strong className="text-emerald-300">0% de comisión</strong> por clase. Clases ilimitadas.
+                  <h3 className="font-bold text-white text-sm sm:text-base">$50.000 / Mes</h3>
+                  <p className="text-xs text-slate-400 leading-normal">
+                    Cuota fija mensual con <strong className="text-emerald-300 font-bold">0% de comisión</strong> por clase. Clases ilimitadas.
                   </p>
                 </div>
                 <button
                   type="button"
-                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all shadow-md ${
                     currentMembershipType === 'MONTHLY_FIXED'
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-emerald-600 text-white shadow-emerald-600/30'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
                   {currentMembershipType === 'MONTHLY_FIXED' ? '✓ Plan Activo' : 'Elegir $50k / Mes'}
-                </button>
-              </div>
-
-              {/* Plan 3: Beca VIP */}
-              <div
-                onClick={() => handleSelectPlan('LIFETIME_FREE')}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
-                  currentMembershipType === 'LIFETIME_FREE'
-                    ? 'bg-purple-600/20 border-purple-500 shadow-lg shadow-purple-500/20 ring-1 ring-purple-500'
-                    : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-sm">
-                    👑
-                  </div>
-                  <h3 className="font-bold text-white text-sm">Plan Beca VIP</h3>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    Exención total de costo ($0 y 0% comisión) otorgado por la administración para docentes VIP.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
-                    currentMembershipType === 'LIFETIME_FREE'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  {currentMembershipType === 'LIFETIME_FREE' ? '✓ Beca Otorgada' : 'Solicitar Beca'}
                 </button>
               </div>
             </div>
