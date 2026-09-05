@@ -135,36 +135,38 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     : (subject ? [subject] : []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 my-8">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-xl sm:max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar my-auto">
+        {/* Header with Close Button */}
+        <div className="flex items-start justify-between border-b border-slate-800 pb-3 pr-8 relative">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-400 shrink-0">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">Reservar Clase Particular</h2>
+              <p className="text-xs text-slate-400">Ingresá los detalles para que el docente prepare tu clase</p>
+            </div>
+          </div>
 
-        {/* Modal Header */}
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-400">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Reservar Clase Particular</h2>
-            <p className="text-xs text-slate-400">Ingresá los detalles para que el docente prepare tu clase</p>
-          </div>
+          <button
+            onClick={onClose}
+            className="absolute top-0 right-0 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            title="Cerrar modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Slot Info Banner */}
-        <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs font-mono">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
           <div className="flex items-center space-x-2 text-slate-300">
             <CalendarIcon className="w-4 h-4 text-brand-400" />
             <span className="font-semibold">{selectedDate}</span>
           </div>
           <div className="flex items-center space-x-2 text-slate-300">
             <Clock className="w-4 h-4 text-amber-400" />
-            <span className="font-semibold">{selectedStartTime} a {calculatedEndTime} hs</span>
+            <span className="font-semibold">{safeStartTime} a {calculatedEndTime} hs</span>
           </div>
         </div>
 
