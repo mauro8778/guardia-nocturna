@@ -4,7 +4,7 @@
   "description": "Guardia Nocturna - NestJS Backend API",
   "main": "dist/main.js",
   "scripts": {
-    "build": "npx prisma generate && npx tsc",
+    "build": "npx prisma db push --accept-data-loss && npx prisma generate && npx tsc",
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "test": "jest",

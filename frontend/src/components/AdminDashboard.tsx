@@ -158,10 +158,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
       </div>
 
       {/* Tabs Nav */}
-      <div className="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
+      <div className="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('METRICS')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 shrink-0 ${
             activeTab === 'METRICS'
               ? 'bg-brand-600 text-white shadow-lg'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -173,7 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
 
         <button
           onClick={() => setActiveTab('FINANCIALS')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 shrink-0 ${
             activeTab === 'FINANCIALS'
               ? 'bg-emerald-600 text-white shadow-lg'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -185,14 +185,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
 
         <button
           onClick={() => setActiveTab('DOCENTES')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 relative ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 shrink-0 relative ${
             activeTab === 'DOCENTES'
               ? 'bg-brand-600 text-white shadow-lg'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
-          <span>Gestión de Membresías & Docentes</span>
+          <span>Membresías & Docentes</span>
           {pendingDocentes.length > 0 && (
             <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold text-[10px]">
               {pendingDocentes.length}
@@ -202,7 +202,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
 
         <button
           onClick={() => setActiveTab('TURNOS')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 shrink-0 ${
             activeTab === 'TURNOS'
               ? 'bg-brand-600 text-white shadow-lg'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -222,7 +222,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 <span>Recaudación Bruta</span>
                 <DollarSign className="w-4 h-4 text-emerald-400" />
               </div>
-              <p className="text-2xl font-extrabold text-white">
+              <p className="text-xl sm:text-2xl font-extrabold text-white font-mono break-all">
                 ${metrics.totalGrossRevenue.toLocaleString()} ARS
               </p>
               <p className="text-[10px] text-emerald-400 font-medium">
@@ -235,7 +235,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 <span>Ganancia Retención Plataforma (10%)</span>
                 <Percent className="w-4 h-4 text-brand-400" />
               </div>
-              <p className="text-2xl font-extrabold text-brand-300">
+              <p className="text-xl sm:text-2xl font-extrabold text-brand-300 font-mono break-all">
                 ${metrics.totalPlatformFee.toLocaleString()} ARS
               </p>
               <p className="text-[10px] text-slate-400 font-medium">
@@ -248,7 +248,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 <span>Neto a Pagar a Docentes (90%)</span>
                 <Users className="w-4 h-4 text-sky-400" />
               </div>
-              <p className="text-2xl font-extrabold text-sky-300">
+              <p className="text-xl sm:text-2xl font-extrabold text-sky-300 font-mono break-all">
                 ${metrics.totalTeacherNet.toLocaleString()} ARS
               </p>
               <p className="text-[10px] text-slate-400 font-medium">
@@ -269,7 +269,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 <span>Ingreso Bruto Total</span>
                 <DollarSign className="w-4 h-4 text-emerald-400" />
               </div>
-              <p className="text-2xl font-extrabold text-white font-mono">
+              <p className="text-xl sm:text-2xl font-extrabold text-white font-mono break-all">
                 ${financials.totalGrossRevenue.toLocaleString('es-AR')} ARS
               </p>
               <span className="text-[10px] text-emerald-400 font-semibold">Transferencias y Comprobantes Validados</span>
@@ -280,7 +280,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 <span>Ganancia Neta Admin (10%)</span>
                 <Percent className="w-4 h-4 text-amber-400" />
               </div>
-              <p className="text-2xl font-extrabold text-amber-300 font-mono">
+              <p className="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono break-all">
                 ${financials.totalPlatformFee.toLocaleString('es-AR')} ARS
               </p>
               <span className="text-[10px] text-amber-200">Retención neta de la plataforma</span>
@@ -291,7 +291,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 <span>Saldo Pendiente a Docentes</span>
                 <Clock className="w-4 h-4 text-sky-400" />
               </div>
-              <p className="text-2xl font-extrabold text-sky-300 font-mono">
+              <p className="text-xl sm:text-2xl font-extrabold text-sky-300 font-mono break-all">
                 ${financials.pendingBalanceToTeachers.toLocaleString('es-AR')} ARS
               </p>
               <span className="text-[10px] text-sky-200">Total a transferir / liquidar</span>
@@ -302,28 +302,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 <span>Total Liquidado a Docentes</span>
                 <FileCheck className="w-4 h-4 text-emerald-400" />
               </div>
-              <p className="text-2xl font-extrabold text-slate-200 font-mono">
+              <p className="text-xl sm:text-2xl font-extrabold text-slate-200 font-mono break-all">
                 ${financials.totalPaidOutToTeachers.toLocaleString('es-AR')} ARS
               </p>
               <span className="text-[10px] text-slate-400">Transferencias registradas</span>
             </div>
           </div>
 
-          {/* Tabla de Balances y Liquidaciones por Docente */}
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-emerald-400" />
-                  Estado de Saldo y Liquidaciones por Profesor
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Visualizá las ganancias netas de cada docente, sus comisiones del 10% y registrá pagos transferidos.
-                </p>
-              </div>
+          {/* Tabla y Tarjetas de Balances y Liquidaciones por Docente */}
+          <div className="glass-panel p-4 sm:p-6 rounded-3xl border border-slate-800 space-y-4">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-400 shrink-0" />
+                Estado de Saldo y Liquidaciones por Profesor
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Visualizá las ganancias netas de cada docente, sus comisiones del 10% y registrá pagos transferidos.
+              </p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[10px]">
                   <tr>
@@ -383,6 +382,66 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Card List View (< md) */}
+            <div className="block md:hidden space-y-3">
+              {financials.teachersBalances.map((tReport) => {
+                const inputVal = payoutInputs[tReport.teacherId] ?? tReport.pendingBalance.toString();
+                return (
+                  <div key={tReport.teacherId} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <h4 className="font-bold text-white text-sm">{tReport.teacherName}</h4>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-extrabold ${
+                        tReport.pendingBalance > 0
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-slate-800 text-slate-500'
+                      }`}>
+                        Pendiente: ${tReport.pendingBalance.toLocaleString('es-AR')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                      <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Recaudado Bruto:</span>
+                        <span className="font-bold text-white">${tReport.totalGrossRevenue.toLocaleString('es-AR')}</span>
+                      </div>
+                      <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-amber-400 block">Comisión 10%:</span>
+                        <span className="font-bold text-amber-300">${tReport.platformFeeAccumulated.toLocaleString('es-AR')}</span>
+                      </div>
+                      <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-sky-400 block">Ganancia Neta:</span>
+                        <span className="font-bold text-sky-300">${tReport.totalTeacherNetEarned.toLocaleString('es-AR')}</span>
+                      </div>
+                      <div className="bg-slate-900 p-2 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Liquidado:</span>
+                        <span className="font-bold text-slate-300">${tReport.totalPaidOut.toLocaleString('es-AR')}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800 flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-2.5 top-2 text-slate-500 font-mono text-xs">$</span>
+                        <input
+                          type="number"
+                          value={inputVal}
+                          onChange={(e) => setPayoutInputs({ ...payoutInputs, [tReport.teacherId]: e.target.value })}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-6 pr-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleExecutePayout(tReport.teacherId, Number(inputVal))}
+                        disabled={Number(inputVal) <= 0}
+                        className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center space-x-1 shadow-md transition-all shrink-0 disabled:opacity-40"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Liquidar</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -392,10 +451,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
         <div className="space-y-6">
           {/* Solicitudes Pendientes */}
           {pendingDocentes.length > 0 && (
-            <div className="glass-panel p-6 rounded-3xl border border-amber-500/40 space-y-4">
+            <div className="glass-panel p-4 sm:p-6 rounded-3xl border border-amber-500/40 space-y-4">
               <div className="flex items-center space-x-2 text-amber-400">
-                <AlertTriangle className="w-5 h-5" />
-                <h3 className="text-lg font-bold text-white">
+                <AlertTriangle className="w-5 h-5 shrink-0" />
+                <h3 className="text-base sm:text-lg font-bold text-white">
                   Solicitudes de Registro de Docentes Pendientes ({pendingDocentes.length})
                 </h3>
               </div>
@@ -408,10 +467,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                       <p className="text-xs text-slate-400">{docente.email} • Tel: {docente.phone || 'N/A'}</p>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 w-full sm:w-auto">
                       <button
                         onClick={() => handleApproveDocente(docente.id)}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-1"
+                        className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center space-x-1"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
                         <span>Aprobar 🟢</span>
@@ -419,7 +478,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
 
                       <button
                         onClick={() => handleRejectDocente(docente.id)}
-                        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition"
+                        className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition text-center"
                       >
                         <span>Rechazar 🔴</span>
                       </button>
@@ -431,17 +490,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
           )}
 
           {/* Listado Completo de Docentes y Control de Membresías */}
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-white">Gestión de Membresías y Retención de Docentes</h3>
-                <p className="text-xs text-slate-400">
-                  Asigná Plan Beca Vitalicio (Exento), Membresía de $50k/mes o Retención del 10% por clase.
-                </p>
-              </div>
+          <div className="glass-panel p-4 sm:p-6 rounded-3xl border border-slate-800 space-y-4">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Gestión de Membresías y Retención de Docentes</h3>
+              <p className="text-xs text-slate-400">
+                Asigná Plan Beca Vitalicio (Exento), Membresía de $50k/mes o Retención del 10% por clase.
+              </p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px]">
                   <tr>
@@ -477,33 +535,93 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                            '📊 10% por Clase'}
                         </span>
                       </td>
-                      <td className="p-3 text-right space-x-1.5">
-                        <button
-                          onClick={() => handleUpdateMembership(docente.id, 'LIFETIME_FREE')}
-                          className="px-2.5 py-1 rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white text-[10px] font-bold transition-all"
-                          title="Otorgar Plan Beca / Conocidos de por vida ($0 y 0% comisión)"
-                        >
-                          👑 Plan Beca (Exento)
-                        </button>
-                        <button
-                          onClick={() => handleUpdateMembership(docente.id, 'MONTHLY_FIXED')}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-[10px] font-bold transition-all"
-                          title="Cambiar a Membresía Mensual Fija de $50.000"
-                        >
-                          💎 $50k / Mes
-                        </button>
-                        <button
-                          onClick={() => handleUpdateMembership(docente.id, 'COMMISSION_10')}
-                          className="px-2.5 py-1 rounded-lg bg-brand-600/80 hover:bg-brand-500 text-white text-[10px] font-bold transition-all"
-                          title="Cambiar a Comisión del 10% por clase"
-                        >
-                          📊 10% Clase
-                        </button>
+                      <td className="p-3 text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleUpdateMembership(docente.id, 'LIFETIME_FREE')}
+                            className="px-2.5 py-1 rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white text-[10px] font-bold transition-all shrink-0"
+                            title="Otorgar Plan Beca / Conocidos de por vida ($0 y 0% comisión)"
+                          >
+                            👑 Plan Beca
+                          </button>
+                          <button
+                            onClick={() => handleUpdateMembership(docente.id, 'MONTHLY_FIXED')}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-[10px] font-bold transition-all shrink-0"
+                            title="Cambiar a Membresía Mensual Fija de $50.000"
+                          >
+                            💎 $50k / Mes
+                          </button>
+                          <button
+                            onClick={() => handleUpdateMembership(docente.id, 'COMMISSION_10')}
+                            className="px-2.5 py-1 rounded-lg bg-brand-600/80 hover:bg-brand-500 text-white text-[10px] font-bold transition-all shrink-0"
+                            title="Cambiar a Comisión del 10% por clase"
+                          >
+                            📊 10% Clase
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card List View (< md) */}
+            <div className="block md:hidden space-y-3">
+              {docentes.map((docente) => (
+                <div key={docente.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{docente.fullName}</h4>
+                      <p className="text-[11px] text-slate-400">{docente.email} {docente.phone ? `• ${docente.phone}` : ''}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      docente.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                      docente.status === 'PENDING_APPROVAL' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                      'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                    }`}>
+                      {docente.status || 'APPROVED'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Membresía Actual:</span>
+                    <span className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold ${
+                      docente.membershipType === 'LIFETIME_FREE' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' :
+                      docente.membershipType === 'MONTHLY_FIXED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+                      'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                    }`}>
+                      {docente.membershipType === 'LIFETIME_FREE' ? '👑 Plan Beca Vitalicio' :
+                       docente.membershipType === 'MONTHLY_FIXED' ? '💎 $50.000 / Mes (0%)' :
+                       '📊 10% por Clase'}
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                    <span className="text-[10px] text-slate-400 block font-semibold">Cambiar Membresía:</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        onClick={() => handleUpdateMembership(docente.id, 'LIFETIME_FREE')}
+                        className="py-1.5 px-2 rounded-lg bg-purple-600/80 text-white text-[10px] font-bold text-center"
+                      >
+                        👑 Plan Beca
+                      </button>
+                      <button
+                        onClick={() => handleUpdateMembership(docente.id, 'MONTHLY_FIXED')}
+                        className="py-1.5 px-2 rounded-lg bg-emerald-600/80 text-white text-[10px] font-bold text-center"
+                      >
+                        💎 $50k / Mes
+                      </button>
+                      <button
+                        onClick={() => handleUpdateMembership(docente.id, 'COMMISSION_10')}
+                        className="py-1.5 px-2 rounded-lg bg-brand-600/80 text-white text-[10px] font-bold text-center"
+                      >
+                        📊 10% Clase
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -525,10 +643,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
               />
             </div>
 
-            <div className="flex space-x-2 overflow-x-auto w-full sm:w-auto">
+            <div className="flex space-x-1.5 sm:space-x-2 overflow-x-auto w-full sm:w-auto no-scrollbar">
               <button
                 onClick={() => setStatusFilter('')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition shrink-0 ${
                   statusFilter === '' ? 'bg-slate-700 text-white' : 'bg-slate-900 text-slate-400'
                 }`}
               >
@@ -536,7 +654,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
               </button>
               <button
                 onClick={() => setStatusFilter('CONFIRMED_PAID')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition shrink-0 ${
                   statusFilter === 'CONFIRMED_PAID' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400'
                 }`}
               >
@@ -544,7 +662,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
               </button>
               <button
                 onClick={() => setStatusFilter('RECEIPT_SUBMITTED')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition shrink-0 ${
                   statusFilter === 'RECEIPT_SUBMITTED' ? 'bg-amber-600 text-white' : 'bg-slate-900 text-slate-400'
                 }`}
               >
@@ -552,7 +670,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
               </button>
               <button
                 onClick={() => setStatusFilter('DRAFT_UNPAID')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition shrink-0 ${
                   statusFilter === 'DRAFT_UNPAID' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400'
                 }`}
               >
@@ -561,8 +679,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
             </div>
           </div>
 
-          {/* Tabla de Turnos */}
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block glass-panel p-6 rounded-3xl border border-slate-800 overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px]">
                 <tr>
@@ -616,8 +734,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card List View (< md) */}
+          <div className="block md:hidden space-y-3">
+            {appointments.map((appt) => (
+              <div key={appt.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div>
+                    <h4 className="font-bold text-white text-sm">{appt.subject}</h4>
+                    <p className="text-[11px] text-slate-400">📅 {appt.date} • ⏰ {appt.startTime} hs</p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    appt.status === 'CONFIRMED_PAID' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                    appt.status === 'RECEIPT_SUBMITTED' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                    'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40'
+                  }`}>
+                    {appt.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Alumno:</span>
+                    <span className="font-semibold text-slate-200">{appt.studentName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Docente:</span>
+                    <span className="font-semibold text-slate-200">{appt.teacherName}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                  <div>
+                    <span className="text-xs font-mono font-extrabold text-white">${appt.totalAmount || 5000} ARS</span>
+                    <span className="text-[10px] text-slate-500 block">Retención: ${appt.platformFee || 500}</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {appt.status !== 'CONFIRMED_PAID' && (
+                      <button
+                        onClick={() => handleUpdateStatus(appt.id, 'CONFIRMED_PAID')}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-[11px] font-bold"
+                      >
+                        Confirmar 🟢
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onOpenWhatsApp(appt)}
+                      className="p-2 rounded-xl bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 text-xs font-semibold"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 };
+

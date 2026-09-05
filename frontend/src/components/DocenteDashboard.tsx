@@ -26,7 +26,7 @@ interface DocenteDashboardProps {
   availability: DocenteAvailability | null;
   onUpdateAvailability: (newConfig: Partial<DocenteAvailability>) => Promise<void>;
   onOpenClassroom: (appointment: Appointment) => void;
-  onOpenWhatsApp: (appointment: Appointment, customMessage?: string) => void;
+  onOpenWhatsApp: (appointment: Appointment | null, customMessage?: string) => void;
 }
 
 const DAYS_NAMES = [
@@ -233,25 +233,37 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
       )}
 
       {/* Membership & Free Trial Status Banner */}
-      <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-slate-950 border border-purple-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold shrink-0">
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-purple-950/90 via-slate-900 to-slate-950 border border-purple-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs shadow-xl">
+        <div className="flex items-start space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 font-bold shrink-0 text-lg">
             🎁
           </div>
-          <div>
-            <h3 className="font-bold text-white text-sm flex items-center gap-2">
-              Membresía Docente: <span className="text-purple-300">10 Días de Prueba Gratuita Activa</span>
+          <div className="space-y-1">
+            <h3 className="font-bold text-white text-sm flex flex-wrap items-center gap-2">
+              Membresía Docente: <span className="text-purple-300 font-extrabold">10 Días de Prueba Gratuita Activa</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-[10px] font-extrabold">
+                10 Días Gratis 🟢
+              </span>
             </h3>
-            <p className="text-slate-400 text-[11px]">
-              Tu cuenta tiene acceso completo a la grilla pública sin costo. Podés dictar clases presenciales y virtuales.
+            <p className="text-slate-300 text-xs">
+              Tenés acceso total y gratuito a la grilla online. Al finalizar o durante la prueba podés elegir tu plan: <span className="text-amber-300 font-semibold">10% por clase</span>, <span className="text-emerald-300 font-semibold">$50.000 mensual (0% comisión)</span> o solicitar <span className="text-purple-300 font-semibold">Plan Beca VIP</span>.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 shrink-0">
-          <span className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-200 border border-purple-500/40 font-mono font-bold">
-            10 Días Gratis 🟢
-          </span>
+        <div className="flex items-center space-x-2 shrink-0 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => {
+              onOpenWhatsApp(
+                null,
+                `¡Hola Admin Guardia Docente! Me gustaría consultar/confirmar mi plan de membresía docente (Elegir 10% por clase, $50.000 mensual o Plan Beca).`
+              );
+            }}
+            className="w-full md:w-auto px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center space-x-1.5"
+          >
+            <span>👑 Elegir / Modificar Mi Plan</span>
+          </button>
         </div>
       </div>
 
@@ -280,10 +292,10 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
       </div>
 
       {/* SubTab Navigation Bar */}
-      <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border-b border-slate-800 pb-3">
         <button
           onClick={() => setSubTab('TURNOS')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
             subTab === 'TURNOS'
               ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
               : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -295,7 +307,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
 
         <button
           onClick={() => setSubTab('DISPONIBILIDAD')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
             subTab === 'DISPONIBILIDAD'
               ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
               : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -308,11 +320,11 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
 
       {subTab === 'DISPONIBILIDAD' ? (
         /* Availability Configuration Form */
-        <form onSubmit={handleSaveAvailability} className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <form onSubmit={handleSaveAvailability} className="glass-panel p-4 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
             <div>
-              <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                <Settings className="w-5 h-5 text-amber-400" />
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                <Settings className="w-5 h-5 text-amber-400 shrink-0" />
                 Configuración de Horarios & Días de Atención
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -323,7 +335,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
             <button
               type="submit"
               disabled={isSavingConfig}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               <span>{isSavingConfig ? 'Guardando...' : '💾 Guardar Configuración'}</span>
@@ -455,7 +467,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
             <label className="block text-xs font-semibold text-slate-300">
               Días de la Semana con Atención Habilitada:
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2">
               {DAYS_NAMES.map((day) => {
                 const active = availableDays.includes(day.id);
                 return (
@@ -662,180 +674,296 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
             <p className="text-xs text-slate-500">Pruebe modificando los términos de búsqueda o filtros.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
-                <tr>
-                  <th className="py-3.5 px-4">Alumno</th>
-                  <th className="py-3.5 px-4">Materia</th>
-                  <th className="py-3.5 px-4">Comprobante N°</th>
-                  <th className="py-3.5 px-4">Fecha / Hora</th>
-                  <th className="py-3.5 px-4">Estado Pago</th>
-                  <th className="py-3.5 px-4 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {filteredAppointments.map((appt) => {
-                  const isDraft = appt.status === 'DRAFT_UNPAID';
-                  const isSubmitted = appt.status === 'RECEIPT_SUBMITTED';
-                  const isPaid = appt.status === 'CONFIRMED_PAID';
+          <>
+            {/* Desktop Table View (md+) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="py-3.5 px-4">Alumno</th>
+                    <th className="py-3.5 px-4">Materia</th>
+                    <th className="py-3.5 px-4">Comprobante N°</th>
+                    <th className="py-3.5 px-4">Fecha / Hora</th>
+                    <th className="py-3.5 px-4">Estado Pago</th>
+                    <th className="py-3.5 px-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredAppointments.map((appt) => {
+                    const isDraft = appt.status === 'DRAFT_UNPAID';
+                    const isSubmitted = appt.status === 'RECEIPT_SUBMITTED';
+                    const isPaid = appt.status === 'CONFIRMED_PAID';
 
-                  return (
-                    <tr key={appt.id} className="hover:bg-slate-900/60 transition-colors">
-                      {/* Alumno Info */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center space-x-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-brand-400 font-bold shrink-0">
-                            <UserIcon className="w-4 h-4" />
+                    return (
+                      <tr key={appt.id} className="hover:bg-slate-900/60 transition-colors">
+                        {/* Alumno Info */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center space-x-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-brand-400 font-bold shrink-0">
+                              <UserIcon className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="font-bold text-white block">{appt.studentName}</span>
+                              <span className="text-[10px] text-slate-400">ID: {appt.studentId.substring(0, 8)}...</span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="font-bold text-white block">{appt.studentName}</span>
-                            <span className="text-[10px] text-slate-400">ID: {appt.studentId.substring(0, 8)}...</span>
+                        </td>
+
+                        {/* Materia, Nivel, Temas & Guía Adjunta */}
+                        <td className="py-3.5 px-4 space-y-1">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-bold text-white block">{appt.subject}</span>
+                            {appt.academicLevel && (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                {appt.academicLevel}
+                              </span>
+                            )}
                           </div>
-                        </div>
-                      </td>
 
-                      {/* Materia, Nivel, Temas & Guía Adjunta */}
-                      <td className="py-3.5 px-4 space-y-1">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-white block">{appt.subject}</span>
-                          {appt.academicLevel && (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                              {appt.academicLevel}
-                            </span>
-                          )}
-                        </div>
-
-                        {appt.specificTopics && (
-                          <p className="text-[11px] font-semibold text-brand-300">
-                            📌 Temas: <span className="text-slate-200">{appt.specificTopics}</span>
-                          </p>
-                        )}
-
-                        {appt.studyMaterialUrl && (
-                          <button
-                            onClick={() => setPreviewReceiptUrl(appt.studyMaterialUrl || null)}
-                            className="inline-flex items-center space-x-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-lg transition-all"
-                          >
-                            <span>📄 Ver Guía / Material de Estudio</span>
-                          </button>
-                        )}
-
-                        {appt.notes && (
-                          <span className="text-[10px] text-slate-400 truncate max-w-xs block italic">
-                            "{appt.notes}"
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Comprobante / Archivo */}
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-1">
-                          {appt.receiptRef && (
-                            <span className="font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-xs block w-max">
-                              {appt.receiptRef}
-                            </span>
+                          {appt.specificTopics && (
+                            <p className="text-[11px] font-semibold text-brand-300">
+                              📌 Temas: <span className="text-slate-200">{appt.specificTopics}</span>
+                            </p>
                           )}
 
-                          {appt.receiptUrl ? (
+                          {appt.studyMaterialUrl && (
                             <button
-                              onClick={() => setPreviewReceiptUrl(appt.receiptUrl || null)}
-                              className="flex items-center space-x-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded-lg transition-all"
+                              onClick={() => setPreviewReceiptUrl(appt.studyMaterialUrl || null)}
+                              className="inline-flex items-center space-x-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-lg transition-all"
                             >
-                              <span>🖼️ Ver Foto / PDF</span>
+                              <span>📄 Ver Guía / Material de Estudio</span>
                             </button>
-                          ) : (
-                            !appt.receiptRef && <span className="text-[11px] text-slate-500 italic">Sin archivo</span>
                           )}
-                        </div>
-                      </td>
 
-                      {/* Fecha / Hora */}
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center space-x-1.5 text-slate-200">
-                            <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                            <span className="font-semibold">{appt.date}</span>
-                          </div>
-                          <div className="flex items-center space-x-1.5 text-slate-400 font-mono text-[11px]">
-                            <Clock className="w-3 h-3 text-amber-400" />
-                            <span>{appt.startTime} a {appt.endTime} hs</span>
-                          </div>
-                        </div>
-                      </td>
+                          {appt.notes && (
+                            <span className="text-[10px] text-slate-400 truncate max-w-xs block italic">
+                              "{appt.notes}"
+                            </span>
+                          )}
+                        </td>
 
-                      {/* Estado Pago */}
-                      <td className="py-3.5 px-4">
-                        {isDraft && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                            ⚪ Sin Pago (Libre)
+                        {/* Comprobante / Archivo */}
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-1">
+                            {appt.receiptRef && (
+                              <span className="font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-xs block w-max">
+                                {appt.receiptRef}
+                              </span>
+                            )}
+
+                            {appt.receiptUrl ? (
+                              <button
+                                onClick={() => setPreviewReceiptUrl(appt.receiptUrl || null)}
+                                className="flex items-center space-x-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded-lg transition-all"
+                              >
+                                <span>🖼️ Ver Foto / PDF</span>
+                              </button>
+                            ) : (
+                              !appt.receiptRef && <span className="text-[11px] text-slate-500 italic">Sin archivo</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Fecha / Hora */}
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center space-x-1.5 text-slate-200">
+                              <Calendar className="w-3.5 h-3.5 text-brand-400" />
+                              <span className="font-semibold">{appt.date}</span>
+                            </div>
+                            <div className="flex items-center space-x-1.5 text-slate-400 font-mono text-[11px]">
+                              <Clock className="w-3 h-3 text-amber-400" />
+                              <span>{appt.startTime} a {appt.endTime} hs</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Estado Pago */}
+                        <td className="py-3.5 px-4">
+                          {isDraft && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                              ⚪ Sin Pago (Libre)
+                            </span>
+                          )}
+                          {isSubmitted && (
+                            <button
+                              onClick={() => handleUpdateStatus(appt.id, 'CONFIRMED_PAID')}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-emerald-500/20 hover:text-emerald-300 hover:border-emerald-500/40 transition-all animate-pulse"
+                              title="Hacé clic para Aprobar Pago 🟢"
+                            >
+                              <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                              <span>🟡 En Revisión (Aprobar 🟢)</span>
+                            </button>
+                          )}
+                          {isPaid && (
+                            <button
+                              onClick={() => handleUpdateStatus(appt.id, 'RECEIPT_SUBMITTED')}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-amber-500/20 hover:text-amber-300 hover:border-amber-500/40 transition-all"
+                              title="Hacé clic para Revertir a Revisión 🟡"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>🟢 Pago Confirmado</span>
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Acciones */}
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            {/* Contactar por WhatsApp */}
+                            <button
+                              onClick={() =>
+                                onOpenWhatsApp(
+                                  appt,
+                                  `¡Hola ${appt.studentName}! Te escribo desde Guardia Docente respecto a tu turno de *${appt.subject}* el día *${appt.date}* a las *${appt.startTime} hs*.`
+                                )
+                              }
+                              className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all"
+                              title="Enviar WhatsApp al Alumno"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </button>
+
+                            {/* Entrar a la Clase Virtual */}
+                            <button
+                              onClick={() => onOpenClassroom(appt)}
+                              className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md shadow-brand-600/30 transition-all"
+                              title="Ingresar al Aula Virtual HD"
+                            >
+                              <Video className="w-3.5 h-3.5" />
+                              <span>Aula HD</span>
+                            </button>
+
+                            {/* Eliminar Turno */}
+                            <button
+                              onClick={() => handleDeleteAppointment(appt.id)}
+                              className="p-2 rounded-xl bg-slate-900 hover:bg-red-500/20 text-slate-500 hover:text-red-400 border border-slate-800 transition-all"
+                              title="Cancelar / Eliminar turno"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List View (< md) */}
+            <div className="block md:hidden p-4 space-y-4">
+              {filteredAppointments.map((appt) => {
+                const isDraft = appt.status === 'DRAFT_UNPAID';
+                const isSubmitted = appt.status === 'RECEIPT_SUBMITTED';
+                const isPaid = appt.status === 'CONFIRMED_PAID';
+
+                return (
+                  <div key={appt.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-brand-400 font-bold shrink-0">
+                          <UserIcon className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-white text-sm block">{appt.studentName}</span>
+                          <span className="text-[10px] text-slate-400">📅 {appt.date} • ⏰ {appt.startTime} hs</span>
+                        </div>
+                      </div>
+
+                      {isDraft && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                          ⚪ Sin Pago
+                        </span>
+                      )}
+                      {isSubmitted && (
+                        <button
+                          onClick={() => handleUpdateStatus(appt.id, 'CONFIRMED_PAID')}
+                          className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"
+                        >
+                          🟡 En Revisión (Aprobar 🟢)
+                        </button>
+                      )}
+                      {isPaid && (
+                        <button
+                          onClick={() => handleUpdateStatus(appt.id, 'RECEIPT_SUBMITTED')}
+                          className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        >
+                          🟢 Pago Confirmado
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-white">{appt.subject}</span>
+                        {appt.academicLevel && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            {appt.academicLevel}
                           </span>
                         )}
-                        {isSubmitted && (
-                          <button
-                            onClick={() => handleUpdateStatus(appt.id, 'CONFIRMED_PAID')}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-emerald-500/20 hover:text-emerald-300 hover:border-emerald-500/40 transition-all animate-pulse"
-                            title="Hacé clic para Aprobar Pago 🟢"
-                          >
-                            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                            <span>🟡 En Revisión (Aprobar 🟢)</span>
-                          </button>
-                        )}
-                        {isPaid && (
-                          <button
-                            onClick={() => handleUpdateStatus(appt.id, 'RECEIPT_SUBMITTED')}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-amber-500/20 hover:text-amber-300 hover:border-amber-500/40 transition-all"
-                            title="Hacé clic para Revertir a Revisión 🟡"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>🟢 Pago Confirmado</span>
-                          </button>
-                        )}
-                      </td>
+                      </div>
 
-                      {/* Acciones */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          {/* Contactar por WhatsApp */}
-                          <button
-                            onClick={() =>
-                              onOpenWhatsApp(
-                                appt,
-                                `¡Hola ${appt.studentName}! Te escribo desde Guardia Docente respecto a tu turno de *${appt.subject}* el día *${appt.date}* a las *${appt.startTime} hs*.`
-                              )
-                            }
-                            className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all"
-                            title="Enviar WhatsApp al Alumno"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                          </button>
+                      {appt.specificTopics && (
+                        <p className="text-[11px] font-medium text-brand-300">
+                          📌 Temas: <span className="text-slate-200">{appt.specificTopics}</span>
+                        </p>
+                      )}
 
-                          {/* Entrar a la Clase Virtual */}
-                          <button
-                            onClick={() => onOpenClassroom(appt)}
-                            className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md shadow-brand-600/30 transition-all"
-                            title="Ingresar al Aula Virtual HD"
-                          >
-                            <Video className="w-3.5 h-3.5" />
-                            <span>Aula HD</span>
-                          </button>
+                      {appt.studyMaterialUrl && (
+                        <button
+                          onClick={() => setPreviewReceiptUrl(appt.studyMaterialUrl || null)}
+                          className="inline-flex items-center space-x-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg"
+                        >
+                          <span>📄 Ver Guía / Material de Estudio</span>
+                        </button>
+                      )}
 
-                          {/* Eliminar Turno */}
-                          <button
-                            onClick={() => handleDeleteAppointment(appt.id)}
-                            className="p-2 rounded-xl bg-slate-900 hover:bg-red-500/20 text-slate-500 hover:text-red-400 border border-slate-800 transition-all"
-                            title="Cancelar / Eliminar turno"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      {appt.receiptUrl && (
+                        <button
+                          onClick={() => setPreviewReceiptUrl(appt.receiptUrl || null)}
+                          className="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-lg ml-2"
+                        >
+                          <span>🖼️ Ver Foto / PDF</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                      <button
+                        onClick={() =>
+                          onOpenWhatsApp(
+                            appt,
+                            `¡Hola ${appt.studentName}! Te escribo desde Guardia Docente respecto a tu turno de *${appt.subject}* el día *${appt.date}* a las *${appt.startTime} hs*.`
+                          )
+                        }
+                        className="flex-1 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center space-x-1"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>WhatsApp</span>
+                      </button>
+
+                      <button
+                        onClick={() => onOpenClassroom(appt)}
+                        className="flex-1 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-bold flex items-center justify-center space-x-1"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        <span>Aula HD</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteAppointment(appt.id)}
+                        className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-red-400 border border-slate-800"
+                        title="Cancelar turno"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
       </>
