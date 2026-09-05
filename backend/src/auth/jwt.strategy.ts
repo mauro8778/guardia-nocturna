@@ -25,10 +25,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Usuario no válido');
     }
     return {
+      id: user.id,
       userId: user.id,
       email: user.email,
       fullName: user.fullName,
       role: user.role,
+      phone: user.phone,
+      status: user.status,
+      commissionRate: user.commissionRate,
+      applyCommission: user.applyCommission,
+      membershipType: user.membershipType,
+      membershipStatus: user.membershipStatus,
+      trialEndsAt: user.trialEndsAt,
+      membershipPaidUntil: user.membershipPaidUntil,
     };
   }
 }

@@ -42,6 +42,7 @@ export class AuthService {
       access_token: token,
       user: {
         id: newUser.id,
+        userId: newUser.id,
         email: newUser.email,
         fullName: newUser.fullName,
         role: newUser.role,
@@ -49,6 +50,10 @@ export class AuthService {
         status: newUser.status,
         commissionRate: newUser.commissionRate,
         applyCommission: newUser.applyCommission,
+        membershipType: newUser.membershipType,
+        membershipStatus: newUser.membershipStatus,
+        trialEndsAt: newUser.trialEndsAt,
+        membershipPaidUntil: newUser.membershipPaidUntil,
       },
     };
   }
@@ -75,6 +80,7 @@ export class AuthService {
       access_token: token,
       user: {
         id: user.id,
+        userId: user.id,
         email: user.email,
         fullName: user.fullName,
         role: user.role,
@@ -82,6 +88,10 @@ export class AuthService {
         status: user.status,
         commissionRate: user.commissionRate,
         applyCommission: user.applyCommission,
+        membershipType: user.membershipType,
+        membershipStatus: user.membershipStatus,
+        trialEndsAt: user.trialEndsAt,
+        membershipPaidUntil: user.membershipPaidUntil,
       },
     };
   }
@@ -106,6 +116,7 @@ export class AuthService {
       access_token: token,
       user: {
         id: updatedUser.id,
+        userId: updatedUser.id,
         email: updatedUser.email,
         fullName: updatedUser.fullName,
         role: updatedUser.role,
@@ -113,6 +124,10 @@ export class AuthService {
         status: updatedUser.status,
         commissionRate: updatedUser.commissionRate,
         applyCommission: updatedUser.applyCommission,
+        membershipType: updatedUser.membershipType,
+        membershipStatus: updatedUser.membershipStatus,
+        trialEndsAt: updatedUser.trialEndsAt,
+        membershipPaidUntil: updatedUser.membershipPaidUntil,
       },
       message: 'Contraseña actualizada e inicio de sesión automático concedido.',
     };

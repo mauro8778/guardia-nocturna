@@ -66,7 +66,8 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
   const handleSelectPlan = async (membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED') => {
     if (!user) return;
     try {
-      await adminApi.updateMyMembership({ teacherId: user.id, membershipType });
+      const teacherId = user.id || (user as any).userId;
+      await adminApi.updateMyMembership({ teacherId, membershipType });
       setCurrentMembershipType(membershipType);
       updateUser({ membershipType });
       showToast(`¡Plan de Membresía guardado: ${
@@ -84,8 +85,9 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
     if (!user) return;
     setIsSubmittingMonthlyReceipt(true);
     try {
+      const teacherId = user.id || (user as any).userId;
       await adminApi.submitMembershipPayment({
-        teacherId: user.id,
+        teacherId,
         teacherName: user.fullName,
         receiptRef: monthlyReceiptRef || monthlyFile?.name || 'Comprobante Mensual $50k',
         receiptUrl: monthlyFile?.dataUrl || undefined,

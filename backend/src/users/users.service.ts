@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
 import { User } from '@prisma/client';
@@ -54,6 +54,7 @@ export class UsersService implements OnModuleInit {
   }
 
   async findById(id: string): Promise<User | null> {
+    if (!id) return null;
     return this.prisma.user.findUnique({ where: { id } });
   }
 
@@ -146,6 +147,7 @@ export class UsersService implements OnModuleInit {
     membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE',
     membershipStatus?: string,
   ): Promise<User> {
+    if (!id) throw new BadRequestException('ID de docente no proporcionado');
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('Docente no encontrado');
 
