@@ -40,45 +40,42 @@ export class WhatsappGatewayService {
           `Tu turno para *${data.subject}* el *${data.date}* de *${data.startTime} a ${data.endTime} hs* fue registrado.\n\n` +
           `💰 *Monto a abonar:* $${data.totalAmount || 5000} ARS\n` +
           `📌 Estado actual: 🟡 *Pago Pendiente*\n\n` +
-          `Por favor adjuntá tu comprobante en la plataforma para confirmación inmediata.`
+          `🌙 *GUARDIA DOCENTE - RESERVA REGISTRADA*\n\n` +
+          `Hola ${data.studentName}, registraste una reserva para *${data.subject}* el día *${data.date}* de *${data.startTime} a ${data.endTime} hs*.\n` +
+          `Docente: *${data.teacherName}*\n\n` +
+          `📌 Estado: *🟡 Pendiente de Comprobante*\n` +
+          `Por favor cargá tu comprobante para confirmar el turno.`
         );
 
       case 'RECEIPT_SUBMITTED':
         return (
-          `🔔 *GUARDIA NOCTURNA - COMPROBANTE CARGADO*\n\n` +
-          `Estimado/a ${data.teacherName || 'Docente'},\n` +
-          `El alumno *${data.studentName}* cargó un comprobante para la clase de *${data.subject}* el *${data.date}* (${data.startTime} hs).\n\n` +
-          `📄 *Ref/Comprobante:* ${data.receiptRef || 'Adjunto'}\n` +
-          `Por favor revisá tu Dashboard Docente para confirmar el turno en verde 🟢.`
+          `🔔 *GUARDIA DOCENTE - COMPROBANTE CARGADO*\n\n` +
+          `Recibimos el comprobante ref: *${data.receiptRef || 'N/A'}* para la clase de *${data.subject}*.\n` +
+          `El docente o administrador está validando la transferencia. Te notificaremos al confirmar.`
         );
 
       case 'APPOINTMENT_CONFIRMED':
         return (
-          `🎉 *GUARDIA NOCTURNA - TURNO CONFIRMADO 🟢*\n\n` +
-          `Hola ${data.studentName},\n` +
-          `¡Tu clase de *${data.subject}* con *${data.teacherName}* fue CONFIRMADA!\n\n` +
-          `📅 *Fecha:* ${data.date}\n` +
-          `⏰ *Horario:* ${data.startTime} a ${data.endTime} hs\n` +
-          `🔗 *Aula Virtual Jitsi:* ${data.meetingUrl || 'Ingresá al sitio para unirte'}`
+          `🎉 *GUARDIA DOCENTE - TURNO CONFIRMADO 🟢*\n\n` +
+          `¡Tu pago fue validado! Tu clase de *${data.subject}* el día *${data.date}* a las *${data.startTime} hs* está confirmada.\n\n` +
+          `🔗 Aula Virtual HD: ${data.meetingUrl || 'Disponible en la grilla'}`
         );
 
       case 'DOCENTE_APPROVED':
         return (
-          `✅ *GUARDIA NOCTURNA - SOLICITUD APROBADA*\n\n` +
-          `Estimado/a ${data.teacherName},\n` +
-          `¡Felicitaciones! Tu cuenta de Docente ha sido APROBADA por la Administración.\n` +
-          `Ya podés ingresar a tu Dashboard para configurar tus horarios, materias y precios.`
+          `✅ *GUARDIA DOCENTE - SOLICITUD APROBADA*\n\n` +
+          `¡Felicitaciones ${data.teacherName}! Tu cuenta de profesor ha sido verificada y aprobada por el Administrador.\n` +
+          `Ya podés configurar tus horarios y recibir reservas.`
         );
 
       case 'DOCENTE_REJECTED':
         return (
-          `⚠️ *GUARDIA NOCTURNA - ESTADO DE REGISTRO*\n\n` +
-          `Estimado/a ${data.teacherName},\n` +
-          `Tu solicitud de registro como Docente se encuentra pausada. Por favor comunicate con administración para mayor detalle.`
+          `⚠️ *GUARDIA DOCENTE - ESTADO DE REGISTRO*\n\n` +
+          `Hola ${data.teacherName}, tu solicitud de registro de docente ha sido revisada por el Administrador. Contactanos para más detalles.`
         );
 
       default:
-        return `🔔 *GUARDIA NOCTURNA*: Notificación del sistema para ${data.studentName || data.teacherName || 'usuario'}.`;
+        return `🔔 *GUARDIA DOCENTE*: Notificación del sistema para ${data.studentName || data.teacherName || 'usuario'}.`;
     }
   }
 

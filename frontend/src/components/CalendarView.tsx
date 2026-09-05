@@ -269,7 +269,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       ${doc.hourlyRate.toLocaleString('es-AR')} ARS {doc.pricingType === 'PER_SUBJECT' ? '• Por Materia' : '• Por Hora'}
                     </p>
                     <p className="text-[10px] text-slate-400 truncate">
-                      {doc.is24Hours ? '⚡ 24 hs Guardia Nocturna' : `${doc.startHour}:00 a ${doc.endHour}:00 hs`}
+                      {doc.is24Hours ? '⚡ 24 hs Guardia Docente' : `${doc.startHour}:00 a ${doc.endHour}:00 hs`}
                     </p>
                   </div>
                 </div>

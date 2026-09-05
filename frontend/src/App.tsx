@@ -202,7 +202,7 @@ const MainApp: React.FC = () => {
                   <span>Plataforma Online de Clases Particulares</span>
                 </div>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                  Reservá tu clase en <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-oat-300 to-brand-400">Guardia Nocturna</span>
+                  Reservá tu clase en <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-oat-300 to-brand-400">Guardia Docente</span>
                 </h2>
                 <p className="text-sm text-slate-400 leading-relaxed">
                   Elegí la materia, el profesor/a y el horario disponible. El turno figura en <span className="text-amber-400 font-semibold">🟡 amarillo</span> al reservar y pasa a <span className="text-emerald-400 font-semibold">🟢 verde</span> al enviar tu comprobante.
@@ -275,7 +275,7 @@ const MainApp: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-slate-800 bg-slate-900/60 py-6 text-center text-xs text-slate-400">
-        <p>© 2026 Guardia Nocturna. Todos los derechos reservados. Clases particulares y turnos online.</p>
+        <p>© 2026 Guardia Docente. Todos los derechos reservados. Clases particulares y turnos online.</p>
       </footer>
     </div>
   );

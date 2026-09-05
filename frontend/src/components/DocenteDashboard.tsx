@@ -381,7 +381,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
           <div className="glass-card p-5 rounded-2xl border border-amber-500/30 bg-slate-950/80 flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-sm font-bold text-white block flex items-center gap-2">
-                ⚡ Modo Guardia Nocturna 24 Horas
+                ⚡ Modo Guardia Docente 24 Horas
                 {is24Hours && (
                   <span className="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">
                     ACTIVADO 24/7
@@ -794,7 +794,7 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
                             onClick={() =>
                               onOpenWhatsApp(
                                 appt,
-                                `¡Hola ${appt.studentName}! Te escribo desde Guardia Nocturna respecto a tu turno de *${appt.subject}* el día *${appt.date}* a las *${appt.startTime} hs*.`
+                                `¡Hola ${appt.studentName}! Te escribo desde Guardia Docente respecto a tu turno de *${appt.subject}* el día *${appt.date}* a las *${appt.startTime} hs*.`
                               )
                             }
                             className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all"

@@ -33,7 +33,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3050;
   await app.listen(port);
-  logger.log(`🚀 Guardia Nocturna API ejecutándose en http://localhost:${port}/api`);
+  logger.log(`🚀 Guardia Docente API ejecutándose en http://localhost:${port}/api`);
 }
 bootstrap();
 

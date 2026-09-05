@@ -23,11 +23,11 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     if (customMessage) {
       setMessage(customMessage);
     } else if (appointment) {
-      setMessage(
-        `¡Hola Guardia Nocturna! Reservé un turno para la materia *${appointment.subject}* el día *${appointment.date}* de *${appointment.startTime} a ${appointment.endTime} hs* (Alumno: ${appointment.studentName}). Quisiera confirmar el método de pago y el acceso al aula virtual.`
-      );
+      const formattedMessage =
+        `¡Hola Guardia Docente! Reservé un turno para la materia *${appointment.subject}* el día *${appointment.date}* de *${appointment.startTime} a ${appointment.endTime} hs* (Alumno: ${appointment.studentName}). Quisiera confirmar el método de pago y el acceso al aula virtual.`;
+      setMessage(formattedMessage);
     } else {
-      setMessage(`¡Hola Guardia Nocturna! Quisiera hacer una consulta sobre las clases particulares online.`);
+      setMessage(`¡Hola Guardia Docente! Quisiera hacer una consulta sobre las clases particulares online.`);
     }
   }, [appointment, customMessage, isOpen]);
 

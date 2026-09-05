@@ -74,7 +74,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </h2>
           <p className="text-xs text-slate-400 mt-1">
             {mode === 'LOGIN'
-              ? 'Accedé a tus turnos de clases en Guardia Nocturna'
+              ? 'Accedé a tus turnos de clases en Guardia Docente'
               : mode === 'REGISTER'
               ? 'Registrate para reservar o dictar clases particulares online'
               : 'Ingresá tu correo y tu nueva contraseña para actualizar la cuenta'}

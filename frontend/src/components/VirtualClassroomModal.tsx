@@ -18,7 +18,7 @@ export const VirtualClassroomModal: React.FC<VirtualClassroomModalProps> = ({
   const cleanRoom = appointment.id ? appointment.id.replace(/-/g, '').slice(0, 12) : 'aula-live';
   const baseMeetingUrl = appointment.meetingUrl
     ? appointment.meetingUrl.split('#')[0]
-    : `https://meet.jit.si/guardia-nocturna-${cleanRoom}`;
+    : `https://meet.jit.si/guardia-docente-${cleanRoom}`;
   
   // URL con parámetros de bypass para ingreso directo sin pedir anfitrión ni login
   const meetingUrl = `${baseMeetingUrl}#config.prejoinPageEnabled=false&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.PREJOIN_PAGE_ENABLED=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
@@ -71,7 +71,7 @@ export const VirtualClassroomModal: React.FC<VirtualClassroomModalProps> = ({
             src={meetingUrl}
             allow="camera; microphone; display-capture; autoplay; clipboard-write"
             className="w-full h-full border-none"
-            title="Aula Virtual Guardia Nocturna"
+            title="Aula Virtual Guardia Docente"
           />
         </div>
 
@@ -82,7 +82,7 @@ export const VirtualClassroomModal: React.FC<VirtualClassroomModalProps> = ({
             <span>Conexión segura cifrada punta a punta</span>
           </div>
           <p className="text-[11px] text-slate-500 hidden sm:block">
-            Guardia Nocturna Video Platform v1.0
+            Guardia Docente Video Platform v1.0
           </p>
         </div>
       </div>

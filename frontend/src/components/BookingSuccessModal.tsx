@@ -16,7 +16,7 @@ interface BookingSuccessModalProps {
 }
 
 export const MP_ALIAS_DEFAULT = 'guardia.nocturna.mp';
-export const MP_TITULAR_DEFAULT = 'Guardia Nocturna SRL';
+export const MP_TITULAR_DEFAULT = 'Guardia Docente SRL';
 
 export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
   isOpen,
