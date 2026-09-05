@@ -172,6 +172,12 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
       setSubjectRates(availability.subjectRates || {});
       setAvailableDays(availability.availableDays);
       setSubjectsList(availability.subjects || []);
+      setSupportedModalities(availability.supportedModalities || 'BOTH');
+      setTeacherAddress(availability.teacherAddress || '');
+      setOffersAtStudentHome(availability.offersAtStudentHome ?? false);
+      setAllowGroupClasses(availability.allowGroupClasses ?? false);
+      setMinGroupStudents(availability.minGroupStudents ?? 1);
+      setMaxGroupStudents(availability.maxGroupStudents ?? 5);
     }
   }, [availability]);
 
@@ -208,6 +214,12 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
           setHourlyRate(config.hourlyRate);
           setAvailableDays(config.availableDays);
           setSubjectsList(config.subjects || []);
+          setSupportedModalities(config.supportedModalities || 'BOTH');
+          setTeacherAddress(config.teacherAddress || '');
+          setOffersAtStudentHome(config.offersAtStudentHome ?? false);
+          setAllowGroupClasses(config.allowGroupClasses ?? false);
+          setMinGroupStudents(config.minGroupStudents ?? 1);
+          setMaxGroupStudents(config.maxGroupStudents ?? 5);
         }
       } catch (err) {
         console.error('Error al cargar disponibilidad propia:', err);
@@ -649,6 +661,133 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* 6. Modalidades de Clase Habilitadas */}
+          <div className="space-y-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <label className="block text-xs font-semibold text-slate-300">
+              Modalidades de Dictado de Clase:
+            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setSupportedModalities('BOTH')}
+                className={`p-3 rounded-xl border text-xs font-bold transition-all text-left space-y-1 ${
+                  supportedModalities === 'BOTH'
+                    ? 'bg-brand-600/20 border-brand-500 text-white shadow-md'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center space-x-1 text-brand-300">
+                  <Video className="w-4 h-4" />
+                  <span>⚡ Híbrido (Ambas)</span>
+                </div>
+                <p className="text-[11px] font-normal text-slate-400">Dictás tanto Online como Presencial</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSupportedModalities('VIRTUAL')}
+                className={`p-3 rounded-xl border text-xs font-bold transition-all text-left space-y-1 ${
+                  supportedModalities === 'VIRTUAL'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center space-x-1 text-indigo-300">
+                  <Video className="w-4 h-4" />
+                  <span>🎥 Solo Online (Virtual)</span>
+                </div>
+                <p className="text-[11px] font-normal text-slate-400">Únicamente clases por videollamada HD</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSupportedModalities('PRESENCIAL')}
+                className={`p-3 rounded-xl border text-xs font-bold transition-all text-left space-y-1 ${
+                  supportedModalities === 'PRESENCIAL'
+                    ? 'bg-amber-600/20 border-amber-500 text-white shadow-md'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center space-x-1 text-amber-300">
+                  <UserIcon className="w-4 h-4" />
+                  <span>📍 Solo Presencial</span>
+                </div>
+                <p className="text-[11px] font-normal text-slate-400">En tu local/domicilio o a domicilio del alumno</p>
+              </button>
+            </div>
+
+            {/* Dirección del Docente si incluye Presencial */}
+            {(supportedModalities === 'PRESENCIAL' || supportedModalities === 'BOTH') && (
+              <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                <label className="block text-xs font-semibold text-slate-300">
+                  Dirección de tu Local / Domicilio para recibir alumnos:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: Av. Rivadavia 4500, CABA (o Zona Caballito)"
+                  value={teacherAddress}
+                  onChange={(e) => setTeacherAddress(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            )}
+
+            {/* A Domicilio del Alumno */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <div>
+                <span className="text-xs font-bold text-white block">🏡 Clases Presenciales a Domicilio del Alumno</span>
+                <span className="text-[11px] text-slate-400">¿Te desplazás hasta la casa o domicilio del alumno?</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={offersAtStudentHome}
+                  onChange={(e) => setOffersAtStudentHome(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+          </div>
+
+          {/* 7. Clases Grupales */}
+          <div className="space-y-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-white block">👥 Formato de Clases Grupales</span>
+                <span className="text-[11px] text-slate-400">Permite que varios alumnos compartan un mismo turno horario</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowGroupClasses}
+                  onChange={(e) => setAllowGroupClasses(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            {allowGroupClasses && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Cupo Máximo de Alumnos por Clase Grupal:
+                  </label>
+                  <input
+                    type="number"
+                    min="2"
+                    max="20"
+                    value={maxGroupStudents}
+                    onChange={(e) => setMaxGroupStudents(Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </form>
       ) : (

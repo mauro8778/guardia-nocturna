@@ -27,7 +27,12 @@ interface CalendarViewProps {
   onTeacherChange: (teacherId: string) => void;
   selectedSubject: string;
   onSubjectChange: (subject: string) => void;
-  onSelectSlotToBook: (time: string) => void;
+  onSelectSlotToBook: (time: string, prefillDetails?: {
+    academicLevel?: string;
+    modality?: 'VIRTUAL' | 'PRESENCIAL';
+    locationType?: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+    classType?: 'INDIVIDUAL' | 'GROUP';
+  }) => void;
   onUpdateStatus: (id: string, newStatus: AppointmentStatus) => void;
   onOpenWhatsApp: (appointment: Appointment) => void;
   onOpenClassroom: (appointment: Appointment) => void;
@@ -51,6 +56,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onOpenClassroom,
 }) => {
   const { user } = useAuth();
+
+  const [selectedAcademicLevel, setSelectedAcademicLevel] = useState<string>('Terciario / Universitario');
+  const [selectedClassType, setSelectedClassType] = useState<'INDIVIDUAL' | 'GROUP'>('INDIVIDUAL');
+  const [selectedLocationType, setSelectedLocationType] = useState<'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME'>('VIRTUAL');
 
   const availability = activeTeacher;
 
@@ -163,13 +172,268 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     new Set(allTeacherAvailabilities.flatMap((t) => t.subjects || []))
   );
 
-  // Filtrar los profesores que dictan la materia seleccionada
-  const teachersForSelectedSubject = allTeacherAvailabilities.filter((t) =>
-    t.subjects?.includes(selectedSubject)
-  );
+  // Filtrar profesores según los 3 requisitos elegidos (materia, formato de clase y modalidad)
+  const eligibleTeachers = allTeacherAvailabilities.filter((t) => {
+    if (selectedSubject && t.subjects && t.subjects.length > 0 && !t.subjects.includes(selectedSubject)) {
+      return false;
+    }
+    if (selectedClassType === 'GROUP' && !t.allowGroupClasses) {
+      return false;
+    }
+    if (selectedLocationType === 'VIRTUAL') {
+      if (t.supportedModalities === 'PRESENCIAL') return false;
+    } else if (selectedLocationType === 'TEACHER_LOCATION') {
+      if (t.supportedModalities === 'VIRTUAL') return false;
+      if (!t.teacherAddress || !t.teacherAddress.trim()) return false;
+    } else if (selectedLocationType === 'STUDENT_HOME') {
+      if (t.supportedModalities === 'VIRTUAL') return false;
+      if (!t.offersAtStudentHome) return false;
+    }
+
+    return true;
+  });
+
+  // Auto-seleccionar el primer docente calificado si el actual no cumple los filtros
+  React.useEffect(() => {
+    if (eligibleTeachers.length > 0) {
+      const isSelectedEligible = eligibleTeachers.some((t) => t.teacherId === selectedTeacherId);
+      if (!isSelectedEligible) {
+        onTeacherChange(eligibleTeachers[0].teacherId);
+      }
+    }
+  }, [selectedSubject, selectedClassType, selectedLocationType, eligibleTeachers, selectedTeacherId, onTeacherChange]);
+
+  const handleSlotClick = (time: string) => {
+    onSelectSlotToBook(time, {
+      academicLevel: selectedAcademicLevel,
+      modality: selectedLocationType === 'VIRTUAL' ? 'VIRTUAL' : 'PRESENCIAL',
+      locationType: selectedLocationType,
+      classType: selectedClassType,
+    });
+  };
 
   return (
     <div className="w-full space-y-6">
+      {/* 🎯 Panel de Configuración Previa de Clase (Paso 1 a 4 antes del Calendario) */}
+      <div className="glass-panel p-5 rounded-3xl border border-brand-500/30 bg-slate-900/90 space-y-5 shadow-2xl">
+        <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
+          <div className="w-10 h-10 rounded-2xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-white tracking-tight">
+              1. Seleccioná los Requisitos para tu Clase
+            </h3>
+            <p className="text-xs text-slate-400">
+              Elegí nivel, materia, formato y modalidad para ver solo profesores disponibles
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Nivel Educativo */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <span>🎓 Nivel Educativo</span>
+            </label>
+            <select
+              value={selectedAcademicLevel}
+              onChange={(e) => setSelectedAcademicLevel(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+            >
+              <option value="Terciario / Universitario">Terciario / Universitario</option>
+              <option value="Secundario">Secundario</option>
+              <option value="Primario">Primario</option>
+              <option value="Posgrado / Profesional">Posgrado / Profesional</option>
+            </select>
+          </div>
+
+          {/* Materia */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <span>📚 Materia a Cursar</span>
+            </label>
+            <select
+              value={selectedSubject}
+              onChange={(e) => onSubjectChange(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+            >
+              {allUniqueSubjects.map((subj) => (
+                <option key={subj} value={subj}>
+                  {subj}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Formato de Clase (Individual vs Grupal) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <span>👥 Formato de Clase</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedClassType('INDIVIDUAL')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                  selectedClassType === 'INDIVIDUAL'
+                    ? 'bg-brand-600 text-white border-brand-400 shadow-md'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                }`}
+              >
+                👤 Individual
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedClassType('GROUP')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                  selectedClassType === 'GROUP'
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-md'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                }`}
+              >
+                👥 Grupal
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Modalidad y Lugar de la Clase */}
+        <div className="space-y-2 pt-2 border-t border-slate-800">
+          <label className="text-xs font-bold text-slate-300 block">
+            📍 Modalidad y Lugar de Cursada:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedLocationType('VIRTUAL')}
+              className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex items-center space-x-3 ${
+                selectedLocationType === 'VIRTUAL'
+                  ? 'bg-brand-600/20 border-brand-500 text-white shadow-lg ring-1 ring-brand-500'
+                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center shrink-0">
+                <Video className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="block text-white font-extrabold">🎥 Virtual (Online)</span>
+                <span className="text-[10px] text-slate-400 font-normal">Videollamada HD integrada</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedLocationType('TEACHER_LOCATION')}
+              className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex items-center space-x-3 ${
+                selectedLocationType === 'TEACHER_LOCATION'
+                  ? 'bg-amber-500/20 border-amber-500 text-white shadow-lg ring-1 ring-amber-500'
+                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <UserIcon className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="block text-white font-extrabold">📍 Presencial (Local Docente)</span>
+                <span className="text-[10px] text-slate-400 font-normal">En establecimiento del profesor</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedLocationType('STUDENT_HOME')}
+              className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex items-center space-x-3 ${
+                selectedLocationType === 'STUDENT_HOME'
+                  ? 'bg-emerald-500/20 border-emerald-500 text-white shadow-lg ring-1 ring-emerald-500'
+                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="block text-white font-extrabold">🏡 A Domicilio del Alumno</span>
+                <span className="text-[10px] text-slate-400 font-normal">Profesor asiste a tu domicilio</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* 👨‍🏫 Selección de Docentes Filtrados */}
+        <div className="space-y-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <UserIcon className="w-4 h-4 text-amber-400" />
+              2. Docentes Habilitados para "{selectedSubject}" ({selectedClassType === 'GROUP' ? 'Grupal' : 'Individual'} - {selectedLocationType === 'VIRTUAL' ? 'Online' : selectedLocationType === 'TEACHER_LOCATION' ? 'Presencial en Local' : 'A Domicilio'}):
+            </span>
+            <span className="text-[11px] font-mono text-amber-400 font-bold">
+              {eligibleTeachers.length} profesores disponibles
+            </span>
+          </div>
+
+          {eligibleTeachers.length === 0 ? (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center space-x-3 text-amber-300 text-xs">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+              <div>
+                <p className="font-bold">No hay profesores registrados con esta combinación de requisitos.</p>
+                <p className="text-[11px] text-amber-300/80 mt-0.5">
+                  Podés modificar la modalidad o la materia para ver los profesores calificados.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {eligibleTeachers.map((doc) => {
+                const isSelected = doc.teacherId === selectedTeacherId;
+                return (
+                  <div
+                    key={doc.teacherId}
+                    onClick={() => onTeacherChange(doc.teacherId)}
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-amber-500/15 border-amber-500 text-white shadow-lg shadow-amber-500/20 scale-[1.02]'
+                        : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 overflow-hidden">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0 ${
+                        isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-400'
+                      }`}>
+                        {doc.teacherName.charAt(0)}
+                      </div>
+                      <div className="truncate">
+                        <h4 className="text-xs font-bold text-white truncate">{doc.teacherName}</h4>
+                        <p className="text-[10px] text-amber-300 font-mono font-bold">
+                          ${doc.hourlyRate.toLocaleString('es-AR')} ARS {doc.pricingType === 'PER_SUBJECT' ? '• Por Materia' : '• Por Hora'}
+                        </p>
+                        <p className="text-[10px] text-slate-400 truncate">
+                          {doc.is24Hours ? '⚡ 24 hs Guardia' : `${doc.startHour}:00 a ${doc.endHour}:00 hs`}
+                        </p>
+                        {doc.teacherAddress && selectedLocationType === 'TEACHER_LOCATION' && (
+                          <p className="text-[9px] text-amber-300 font-mono truncate">📍 {doc.teacherAddress}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all shrink-0 ${
+                        isSelected
+                          ? 'bg-amber-500 text-slate-950'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {isSelected ? '✓ Elegido' : 'Elegir'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Calendar Header Control Bar */}
       <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-800">
         <div className="flex items-center space-x-3">
@@ -178,10 +442,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              Grilla de Turnos
+              Grilla de Horarios Disponible
               <span className="text-xs font-normal text-slate-400">({selectedDate})</span>
             </h2>
-            <p className="text-xs text-slate-400">Seleccioná materia, docente y horario para reservar tu clase online</p>
+            <p className="text-xs text-slate-400">Seleccioná un bloque horario libre para agendar tu clase con {availability?.teacherName || 'el docente'}</p>
           </div>
         </div>
 
@@ -221,98 +485,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <span className="w-3 h-3 rounded-full bg-slate-700"></span>
             <span className="text-slate-400">Ocupado</span>
           </div>
-        </div>
-      </div>
-
-      {/* 📚 Paso 1: Elegir Materia */}
-      <div className="glass-panel p-4 rounded-2xl border border-brand-500/30 bg-slate-900/90 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <BookOpen className="w-4 h-4 text-brand-400" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">
-              1. Seleccioná la Materia que querés cursar:
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          {allUniqueSubjects.map((subj) => (
-            <button
-              key={subj}
-              type="button"
-              onClick={() => onSubjectChange(subj)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                selectedSubject === subj
-                  ? 'bg-brand-600 text-white border-brand-400 shadow-md shadow-brand-600/40 scale-[1.02]'
-                  : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
-              }`}
-            >
-              {subj}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 👨‍🏫 Paso 2: Elegir Docente que la dicta */}
-      <div className="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-slate-900/90 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <UserIcon className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">
-              2. Seleccioná el Profesora/Profesor para "{selectedSubject}":
-            </span>
-          </div>
-          <span className="text-[11px] text-slate-400 font-mono">
-            {teachersForSelectedSubject.length} docentes disponibles
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {(teachersForSelectedSubject.length > 0
-            ? teachersForSelectedSubject
-            : allTeacherAvailabilities
-          ).map((doc) => {
-            const isSelected = doc.teacherId === selectedTeacherId;
-            return (
-              <div
-                key={doc.teacherId}
-                onClick={() => onTeacherChange(doc.teacherId)}
-                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-                  isSelected
-                    ? 'bg-amber-500/15 border-amber-500 text-white shadow-lg shadow-amber-500/20 scale-[1.02]'
-                    : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
-                }`}
-              >
-                <div className="flex items-center space-x-3 overflow-hidden">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0 ${
-                    isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-400'
-                  }`}>
-                    {doc.teacherName.charAt(0)}
-                  </div>
-                  <div className="truncate">
-                    <h4 className="text-xs font-bold text-white truncate">{doc.teacherName}</h4>
-                    <p className="text-[10px] text-amber-300 font-mono font-bold">
-                      ${doc.hourlyRate.toLocaleString('es-AR')} ARS {doc.pricingType === 'PER_SUBJECT' ? '• Por Materia' : '• Por Hora'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      {doc.is24Hours ? '⚡ 24 hs Guardia Docente' : `${doc.startHour}:00 a ${doc.endHour}:00 hs`}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all shrink-0 ${
-                    isSelected
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {isSelected ? '✓ Elegido' : 'Elegir'}
-                </button>
-              </div>
-            );
-          })}
         </div>
       </div>
 
@@ -532,7 +704,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               ) : (
                 /* Free Available Slot View */
                 <div
-                  onClick={() => onSelectSlotToBook(time)}
+                  onClick={() => handleSlotClick(time)}
                   className="py-4 flex flex-col items-center justify-center text-center space-y-2"
                 >
                   <div className="w-8 h-8 rounded-full bg-slate-800/80 group-hover:bg-brand-600 flex items-center justify-center text-slate-400 group-hover:text-white transition-all">

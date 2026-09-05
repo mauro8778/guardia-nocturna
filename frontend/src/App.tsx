@@ -28,6 +28,12 @@ const MainApp: React.FC = () => {
   const [allAvailabilities, setAllAvailabilities] = useState<DocenteAvailability[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [prefilledBookingDetails, setPrefilledBookingDetails] = useState<{
+    academicLevel?: string;
+    modality?: 'VIRTUAL' | 'PRESENCIAL';
+    locationType?: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+    classType?: 'INDIVIDUAL' | 'GROUP';
+  }>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Modales
@@ -142,7 +148,15 @@ const MainApp: React.FC = () => {
   }, [selectedDate, selectedTeacherId]);
 
   // Selección de slot disponible para reservar
-  const handleSelectSlotToBook = (time: string) => {
+  const handleSelectSlotToBook = (
+    time: string,
+    prefillDetails?: {
+      academicLevel?: string;
+      modality?: 'VIRTUAL' | 'PRESENCIAL';
+      locationType?: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+      classType?: 'INDIVIDUAL' | 'GROUP';
+    }
+  ) => {
     if (!user) {
       setIsAuthOpen(true);
       showToast('Por favor iniciá sesión o registrate para tomar un turno.');
@@ -153,6 +167,9 @@ const MainApp: React.FC = () => {
       return;
     }
     setSelectedStartTime(time);
+    if (prefillDetails) {
+      setPrefilledBookingDetails(prefillDetails);
+    }
     setIsBookingOpen(true);
   };
 
@@ -276,6 +293,10 @@ const MainApp: React.FC = () => {
         selectedDate={selectedDate}
         selectedStartTime={selectedStartTime}
         initialSubject={selectedSubject}
+        initialAcademicLevel={prefilledBookingDetails.academicLevel}
+        initialModality={prefilledBookingDetails.modality}
+        initialLocationType={prefilledBookingDetails.locationType}
+        initialClassType={prefilledBookingDetails.classType}
         hourlyRate={activeTeacher?.hourlyRate || 5000}
         availableSubjects={activeTeacher?.subjects}
         teacherId={activeTeacher?.teacherId}

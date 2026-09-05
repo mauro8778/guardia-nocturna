@@ -9,6 +9,10 @@ interface BookingModalProps {
   selectedDate: string;
   selectedStartTime: string;
   initialSubject?: string;
+  initialAcademicLevel?: string;
+  initialModality?: 'VIRTUAL' | 'PRESENCIAL';
+  initialLocationType?: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+  initialClassType?: 'INDIVIDUAL' | 'GROUP';
   hourlyRate?: number;
   availableSubjects?: string[];
   teacherId?: string;
@@ -22,6 +26,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   selectedDate,
   selectedStartTime,
   initialSubject = '',
+  initialAcademicLevel = 'Terciario / Universitario',
+  initialModality = 'VIRTUAL',
+  initialLocationType = 'VIRTUAL',
+  initialClassType = 'INDIVIDUAL',
   hourlyRate = 0,
   availableSubjects = [],
   teacherId,
@@ -29,7 +37,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onBookingSuccess,
 }) => {
   const [subject, setSubject] = useState<string>(initialSubject);
-  const [academicLevel, setAcademicLevel] = useState<string>('Terciario / Universitario');
+  const [academicLevel, setAcademicLevel] = useState<string>(initialAcademicLevel);
   const [specificTopics, setSpecificTopics] = useState<string>('');
   const [studyMaterialUrl, setStudyMaterialUrl] = useState<string>('');
   const [materialFileName, setMaterialFileName] = useState<string>('');
@@ -37,20 +45,24 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [modality, setModality] = useState<'VIRTUAL' | 'PRESENCIAL'>('VIRTUAL');
-  const [locationType, setLocationType] = useState<'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME'>('VIRTUAL');
+  const [modality, setModality] = useState<'VIRTUAL' | 'PRESENCIAL'>(initialModality);
+  const [locationType, setLocationType] = useState<'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME'>(initialLocationType);
   const [studentAddress, setStudentAddress] = useState<string>('');
-  const [classType, setClassType] = useState<'INDIVIDUAL' | 'GROUP'>('INDIVIDUAL');
+  const [classType, setClassType] = useState<'INDIVIDUAL' | 'GROUP'>(initialClassType);
 
   React.useEffect(() => {
     if (isOpen) {
       setSubject(initialSubject || (availableSubjects[0] || ''));
+      if (initialAcademicLevel) setAcademicLevel(initialAcademicLevel);
+      if (initialModality) setModality(initialModality);
+      if (initialLocationType) setLocationType(initialLocationType);
+      if (initialClassType) setClassType(initialClassType);
       setSpecificTopics('');
       setStudyMaterialUrl('');
       setMaterialFileName('');
       setNotes('');
     }
-  }, [isOpen, initialSubject, availableSubjects]);
+  }, [isOpen, initialSubject, availableSubjects, initialAcademicLevel, initialModality, initialLocationType, initialClassType]);
 
   if (!isOpen) return null;
 
