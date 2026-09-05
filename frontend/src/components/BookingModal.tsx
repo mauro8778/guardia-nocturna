@@ -37,6 +37,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [modality, setModality] = useState<'VIRTUAL' | 'PRESENCIAL'>('VIRTUAL');
+  const [locationType, setLocationType] = useState<'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME'>('VIRTUAL');
+  const [studentAddress, setStudentAddress] = useState<string>('');
+  const [classType, setClassType] = useState<'INDIVIDUAL' | 'GROUP'>('INDIVIDUAL');
 
   React.useEffect(() => {
     if (isOpen) {
@@ -82,11 +86,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const rate = typeof hourlyRate === 'number' && !isNaN(hourlyRate) && hourlyRate > 0 ? hourlyRate : 5000;
   const totalPrice = (durationHours || 1) * rate;
 
-  const [modality, setModality] = useState<'VIRTUAL' | 'PRESENCIAL'>('VIRTUAL');
-  const [locationType, setLocationType] = useState<'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME'>('VIRTUAL');
-  const [studentAddress, setStudentAddress] = useState<string>('');
-  const [classType, setClassType] = useState<'INDIVIDUAL' | 'GROUP'>('INDIVIDUAL');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -103,9 +102,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         date: selectedDate,
         startTime: selectedStartTime,
         endTime: calculatedEndTime,
-        subject,
+        subject: subject || 'Clase Particular',
         academicLevel,
-        specificTopics,
+        specificTopics: specificTopics.trim() || 'Consulta general de la materia',
         studyMaterialUrl,
         notes: notes ? `${notes} (Duración: ${durationHours} hs)` : `Duración: ${durationHours} hs`,
         teacherId,
@@ -467,7 +466,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !subject || !specificTopics}
+              disabled={isSubmitting}
               className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50 active:scale-95"
             >
               {isSubmitting ? 'Reservando...' : `Confirmar Reserva ($${totalPrice.toLocaleString('es-AR')})`}
