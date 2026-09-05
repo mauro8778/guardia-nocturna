@@ -90,6 +90,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     e.preventDefault();
     setError(null);
 
+    // Guard: Prevent booking past dates or past time slots on current day
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+    const currentH = String(now.getHours()).padStart(2, '0');
+    const currentM = String(now.getMinutes()).padStart(2, '0');
+    const currentTimeStr = `${currentH}:${currentM}`;
+
+    if (selectedDate < todayStr || (selectedDate === todayStr && selectedStartTime < currentTimeStr)) {
+      setError('Este horario ya ha transcurrido. Por favor seleccioná un turno futuro.');
+      return;
+    }
+
     if (modality === 'PRESENCIAL' && locationType === 'STUDENT_HOME' && !studentAddress.trim()) {
       setError('Por favor ingresá la dirección de tu domicilio para la clase presencial.');
       return;

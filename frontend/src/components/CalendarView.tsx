@@ -83,11 +83,37 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const HOURS = getDynamicHours();
 
-  // Helper para mover fecha (+1 día, -1 día)
+  // Helper para fecha de hoy YYYY-MM-DD
+  const getTodayStr = (): string => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  // Helper para verificar si una fecha u hora pertenece al pasado
+  const isSlotInPast = (slotDate: string, slotTime: string): boolean => {
+    const todayStr = getTodayStr();
+    if (slotDate < todayStr) return true;
+    if (slotDate === todayStr) {
+      const now = new Date();
+      const currentH = String(now.getHours()).padStart(2, '0');
+      const currentM = String(now.getMinutes()).padStart(2, '0');
+      const currentTimeStr = `${currentH}:${currentM}`;
+      return slotTime < currentTimeStr;
+    }
+    return false;
+  };
+
+  // Helper para mover fecha (+1 día, -1 día) sin retroceder al pasado
   const shiftDate = (days: number) => {
     const d = new Date(selectedDate + 'T00:00:00');
     d.setDate(d.getDate() + days);
-    onDateChange(d.toISOString().split('T')[0]);
+    const newDateStr = d.toISOString().split('T')[0];
+    const todayStr = getTodayStr();
+    if (newDateStr < todayStr) return; // Impedir navegar a días que ya pasaron
+    onDateChange(newDateStr);
   };
 
   const timeToMin = (t: string): number => {
@@ -325,26 +351,30 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           const isSubmitted = appointment?.status === 'RECEIPT_SUBMITTED';
           const isPaid = appointment?.status === 'CONFIRMED_PAID';
 
+          const isPast = isSlotInPast(selectedDate, time);
+
           return (
             <div
               key={time}
               className={`relative rounded-2xl p-4 transition-all duration-200 ${
-                !isBooked
-                  ? 'glass-card hover:border-brand-500/50 hover:bg-slate-900/80 group cursor-pointer'
-                  : isDraft
-                  ? 'glass-oat border-oat-300/40'
-                  : isSubmitted
-                  ? 'glass-yellow border-amber-500/40'
-                  : isPaid
-                  ? 'glass-green border-emerald-500/40'
-                  : 'glass-disabled border-slate-800/40'
+                isBooked
+                  ? isDraft
+                    ? 'glass-oat border-oat-300/40'
+                    : isSubmitted
+                    ? 'glass-yellow border-amber-500/40'
+                    : isPaid
+                    ? 'glass-green border-emerald-500/40'
+                    : 'glass-disabled border-slate-800/40'
+                  : isPast
+                  ? 'bg-slate-950/60 border border-slate-800/60 opacity-50 cursor-not-allowed'
+                  : 'glass-card hover:border-brand-500/50 hover:bg-slate-900/80 group cursor-pointer'
               }`}
             >
               {/* Card Top Header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
-                  <Clock className={`w-4 h-4 ${isSubmitted ? 'text-amber-400' : isPaid ? 'text-emerald-400' : isDraft ? 'text-oat-300' : 'text-slate-400'}`} />
-                  <span className="font-mono text-sm font-bold text-white">{time} hs</span>
+                  <Clock className={`w-4 h-4 ${isSubmitted ? 'text-amber-400' : isPaid ? 'text-emerald-400' : isDraft ? 'text-oat-300' : isPast && !isBooked ? 'text-slate-600' : 'text-slate-400'}`} />
+                  <span className={`font-mono text-sm font-bold ${isPast && !isBooked ? 'text-slate-500' : 'text-white'}`}>{time} hs</span>
                 </div>
 
                 {/* Status Badges */}
@@ -365,7 +395,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     {isStartSlot ? '🟢 Turno Confirmado' : `🟢 Reservado (${appointment.startTime} - ${appointment.endTime})`}
                   </span>
                 )}
-                {!isBooked && (
+                {!isBooked && isPast && (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-900 text-slate-500 border border-slate-800/80">
+                    ⏰ Pasado
+                  </span>
+                )}
+                {!isBooked && !isPast && (
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-brand-300 border border-slate-700/50 group-hover:bg-brand-600 group-hover:text-white transition-all">
                     Disponible
                   </span>
@@ -485,6 +520,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       )}
                     </div>
                   </div>
+                </div>
+              ) : isPast ? (
+                /* Past Available Slot View (Disabled) */
+                <div className="py-4 flex flex-col items-center justify-center text-center space-y-1 select-none">
+                  <Clock className="w-5 h-5 text-slate-600 mb-1" />
+                  <span className="text-xs font-medium text-slate-500">
+                    Horario Concluido
+                  </span>
                 </div>
               ) : (
                 /* Free Available Slot View */
