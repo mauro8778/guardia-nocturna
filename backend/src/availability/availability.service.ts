@@ -72,7 +72,22 @@ export class AvailabilityService {
   }
 
   async getAllPublicAvailabilities(): Promise<FormattedAvailability[]> {
-    const configs = await this.prisma.availability.findMany();
+    const approvedTeachers = await this.prisma.user.findMany({
+      where: {
+        role: 'TEACHER',
+        status: 'APPROVED',
+      },
+      select: { id: true },
+    });
+
+    const teacherIds = approvedTeachers.map((t) => t.id);
+
+    const configs = await this.prisma.availability.findMany({
+      where: {
+        teacherId: { in: teacherIds },
+      },
+    });
+
     return configs.map((c) => this.formatAvailability(c));
   }
 
