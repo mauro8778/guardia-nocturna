@@ -77,9 +77,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const calculatedEndTime = computeEndTime(selectedStartTime, durationHours);
   const totalPrice = durationHours * hourlyRate;
 
+  const [modality, setModality] = useState<'VIRTUAL' | 'PRESENCIAL'>('VIRTUAL');
+  const [locationType, setLocationType] = useState<'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME'>('VIRTUAL');
+  const [studentAddress, setStudentAddress] = useState<string>('');
+  const [classType, setClassType] = useState<'INDIVIDUAL' | 'GROUP'>('INDIVIDUAL');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (modality === 'PRESENCIAL' && locationType === 'STUDENT_HOME' && !studentAddress.trim()) {
+      setError('Por favor ingresá la dirección de tu domicilio para la clase presencial.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -94,6 +105,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         notes: notes ? `${notes} (Duración: ${durationHours} hs)` : `Duración: ${durationHours} hs`,
         teacherId,
         teacherName,
+        modality,
+        locationType: modality === 'VIRTUAL' ? 'VIRTUAL' : locationType,
+        classAddress: locationType === 'STUDENT_HOME' ? studentAddress : undefined,
+        classType,
       });
       onBookingSuccess(created, totalPrice);
       onClose();
@@ -159,6 +174,119 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
         {/* Booking Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Modalidad de Clase & Tipo de Clase */}
+          <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-white uppercase tracking-wider">
+                Modalidad de la Clase:
+              </label>
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => { setModality('VIRTUAL'); setLocationType('VIRTUAL'); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    modality === 'VIRTUAL'
+                      ? 'bg-brand-600 text-white border-brand-400 shadow-md'
+                      : 'bg-slate-900 text-slate-400 border-slate-800'
+                  }`}
+                >
+                  🎥 Virtual (Online)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setModality('PRESENCIAL'); setLocationType('TEACHER_LOCATION'); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    modality === 'PRESENCIAL'
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                      : 'bg-slate-900 text-slate-400 border-slate-800'
+                  }`}
+                >
+                  📍 Presencial
+                </button>
+              </div>
+            </div>
+
+            {/* Opciones Presenciales (Lugar) */}
+            {modality === 'PRESENCIAL' && (
+              <div className="pt-2 border-t border-slate-800/80 space-y-3">
+                <label className="block text-xs font-semibold text-amber-300">
+                  ¿Dónde se dictará la clase presencial?
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLocationType('TEACHER_LOCATION')}
+                    className={`p-2.5 rounded-xl text-xs font-bold transition-all border text-left ${
+                      locationType === 'TEACHER_LOCATION'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-slate-900 text-slate-400 border-slate-800'
+                    }`}
+                  >
+                    🏢 Estudio / Instituto del Docente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLocationType('STUDENT_HOME')}
+                    className={`p-2.5 rounded-xl text-xs font-bold transition-all border text-left ${
+                      locationType === 'STUDENT_HOME'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-slate-900 text-slate-400 border-slate-800'
+                    }`}
+                  >
+                    🏠 A Domicilio del Alumno
+                  </button>
+                </div>
+
+                {locationType === 'STUDENT_HOME' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Ingresá tu Dirección de Domicilio *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Calle, Número, Piso/Depto, Barrio..."
+                      value={studentAddress}
+                      onChange={(e) => setStudentAddress(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tipo de Clase (Individual vs Grupal) */}
+            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-300">
+                Tipo de Clase:
+              </label>
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setClassType('INDIVIDUAL')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${
+                    classType === 'INDIVIDUAL'
+                      ? 'bg-slate-800 text-white border-slate-600'
+                      : 'bg-slate-950 text-slate-500 border-slate-900'
+                  }`}
+                >
+                  👤 Individual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassType('GROUP')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${
+                    classType === 'GROUP'
+                      ? 'bg-emerald-600 text-white border-emerald-400'
+                      : 'bg-slate-950 text-slate-500 border-slate-900'
+                  }`}
+                >
+                  👥 Grupal (Unirse)
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Materia y Nivel Educativo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

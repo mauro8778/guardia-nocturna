@@ -149,8 +149,11 @@ export class AppointmentsService {
       where: { date: dto.date, teacherId: targetTeacherId },
     });
 
+    const isGroupBooking = dto.classType === 'GROUP';
+    const maxGroupStudents = isGroupBooking ? (teacherAvail?.maxGroupStudents || 5) : 1;
+
     // Check overlap with locked appointments (RECEIPT_SUBMITTED or CONFIRMED_PAID)
-    const overlappingLocked = dateAppointments.find((appt) => {
+    const overlappingLocked = dateAppointments.filter((appt) => {
       if (appt.status !== 'RECEIPT_SUBMITTED' && appt.status !== 'CONFIRMED_PAID') {
         return false;
       }
@@ -159,10 +162,33 @@ export class AppointmentsService {
       return newStart < apptEnd && apptStart < newEnd;
     });
 
-    if (overlappingLocked) {
-      throw new ConflictException(
-        `El rango de horario seleccionado (${dto.startTime} a ${dto.endTime} hs) se superpone con un turno ya reservado (${overlappingLocked.startTime} a ${overlappingLocked.endTime} hs).`,
-      );
+    if (overlappingLocked.length > 0) {
+      if (!isGroupBooking || overlappingLocked.some((a) => a.classType === 'INDIVIDUAL')) {
+        throw new ConflictException(
+          `El rango de horario seleccionado (${dto.startTime} a ${dto.endTime} hs) ya se encuentra reservado.`,
+        );
+      }
+
+      // Group booking: count enrolled students
+      const totalEnrolled = overlappingLocked.reduce((sum, a) => sum + (a.enrolledCount || 1), 0);
+      if (totalEnrolled >= maxGroupStudents) {
+        throw new ConflictException(
+          `La clase grupal de ${dto.subject} ha alcanzado su cupo máximo de ${maxGroupStudents} alumnos.`,
+        );
+      }
+    }
+
+    // Determine final class address
+    let finalClassAddress: string | null = null;
+    const selectedModality = dto.modality || 'VIRTUAL';
+    const selectedLocationType = dto.locationType || (selectedModality === 'PRESENCIAL' ? 'TEACHER_LOCATION' : 'VIRTUAL');
+
+    if (selectedModality === 'PRESENCIAL') {
+      if (selectedLocationType === 'TEACHER_LOCATION') {
+        finalClassAddress = teacherAvail?.teacherAddress || 'Dirección del Estudio/Instituto del Docente';
+      } else if (selectedLocationType === 'STUDENT_HOME') {
+        finalClassAddress = dto.classAddress || 'Domicilio del Alumno';
+      }
     }
 
     // Remove overlapping unpaid drafts or cancelled appointments efficiently
@@ -183,11 +209,13 @@ export class AppointmentsService {
       });
     }
 
-    // Auto-generate free embedded meeting room URL
-    const cleanRoomName = `guardia-nocturna-${dto.date}-${dto.startTime.replace(':', '')}-${Math.floor(
+    // Auto-generate free embedded meeting room URL if Virtual
+    const cleanRoomName = `guardia-docente-${dto.date}-${dto.startTime.replace(':', '')}-${Math.floor(
       1000 + Math.random() * 9000,
     )}`;
-    const meetingUrl = `https://meet.jit.si/${cleanRoomName}#config.prejoinPageEnabled=false&config.requireDisplayName=false`;
+    const meetingUrl = selectedModality === 'VIRTUAL'
+      ? `https://meet.jit.si/${cleanRoomName}#config.prejoinPageEnabled=false&config.requireDisplayName=false`
+      : null;
 
     const newAppointment = await this.prisma.appointment.create({
       data: {
@@ -209,6 +237,12 @@ export class AppointmentsService {
         platformFee,
         teacherNet,
         pricingType,
+        modality: selectedModality,
+        locationType: selectedLocationType,
+        classAddress: finalClassAddress,
+        classType: isGroupBooking ? 'GROUP' : 'INDIVIDUAL',
+        maxStudents: maxGroupStudents,
+        enrolledCount: 1,
       },
     });
 

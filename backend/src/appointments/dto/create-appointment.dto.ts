@@ -40,5 +40,21 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString()
   teacherName?: string;
+
+  @IsOptional()
+  @IsString()
+  modality?: 'VIRTUAL' | 'PRESENCIAL';
+
+  @IsOptional()
+  @IsString()
+  locationType?: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+
+  @IsOptional()
+  @IsString()
+  classAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  classType?: 'INDIVIDUAL' | 'GROUP';
 }
 

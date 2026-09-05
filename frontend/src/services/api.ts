@@ -64,6 +64,10 @@ export const appointmentsApi = {
     notes?: string;
     teacherId?: string;
     teacherName?: string;
+    modality?: 'VIRTUAL' | 'PRESENCIAL';
+    locationType?: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+    classAddress?: string;
+    classType?: 'INDIVIDUAL' | 'GROUP';
   }): Promise<Appointment> => {
     const response = await api.post<Appointment>('/appointments', data);
     return response.data;
@@ -140,6 +144,26 @@ export const adminApi = {
 
   updateCommission: async (id: string, data: { commissionRate?: number; applyCommission?: boolean }): Promise<User> => {
     const response = await api.patch<User>(`/users/admin/docentes/${id}/commission`, data);
+    return response.data;
+  },
+
+  updateMembership: async (id: string, data: { membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE'; membershipStatus?: string }): Promise<User> => {
+    const response = await api.patch<User>(`/users/admin/docentes/${id}/membership`, data);
+    return response.data;
+  },
+
+  submitMembershipPayment: async (data: { teacherId: string; teacherName: string; receiptRef?: string; receiptUrl?: string }) => {
+    const response = await api.patch('/users/docente/membership-payment', data);
+    return response.data;
+  },
+
+  getMembershipPayments: async () => {
+    const response = await api.get('/users/admin/membership-payments');
+    return response.data;
+  },
+
+  approveMembershipPayment: async (id: string) => {
+    const response = await api.patch(`/users/admin/membership-payments/${id}/approve`);
     return response.data;
   },
 };

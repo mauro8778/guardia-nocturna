@@ -1,5 +1,7 @@
 export type UserRole = 'STUDENT' | 'ADMIN';
 export type UserStatus = 'APPROVED' | 'PENDING_APPROVAL' | 'REJECTED';
+export type MembershipType = 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE';
+export type MembershipStatus = 'ACTIVE_TRIAL' | 'ACTIVE_PAID' | 'EXEMPT' | 'SUSPENDED_UNPAID';
 
 export interface User {
   id: string;
@@ -10,9 +12,16 @@ export interface User {
   status?: UserStatus;
   commissionRate?: number;
   applyCommission?: boolean;
+  membershipType?: MembershipType;
+  membershipStatus?: MembershipStatus;
+  trialEndsAt?: string;
+  membershipPaidUntil?: string;
 }
 
 export type AppointmentStatus = 'DRAFT_UNPAID' | 'RECEIPT_SUBMITTED' | 'CONFIRMED_PAID' | 'CANCELLED';
+export type ClassModality = 'VIRTUAL' | 'PRESENCIAL';
+export type LocationType = 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+export type ClassType = 'INDIVIDUAL' | 'GROUP';
 
 export interface Appointment {
   id: string;
@@ -36,6 +45,12 @@ export interface Appointment {
   platformFee?: number;
   teacherNet?: number;
   pricingType?: 'PER_HOUR' | 'PER_SUBJECT';
+  modality?: ClassModality;
+  locationType?: LocationType;
+  classAddress?: string;
+  classType?: ClassType;
+  maxStudents?: number;
+  enrolledCount?: number;
   createdAt: string;
 }
 
@@ -59,6 +74,24 @@ export interface DocenteAvailability {
   pricingType?: 'PER_HOUR' | 'PER_SUBJECT';
   subjectRates?: Record<string, number>;
   linkMP?: string;
+  supportedModalities?: 'VIRTUAL' | 'PRESENCIAL' | 'BOTH';
+  teacherAddress?: string;
+  offersAtStudentHome?: boolean;
+  allowGroupClasses?: boolean;
+  minGroupStudents?: number;
+  maxGroupStudents?: number;
+}
+
+export interface TeacherMembershipPayment {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  amount: number;
+  receiptRef?: string;
+  receiptUrl?: string;
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+  periodMonth: string;
+  createdAt: string;
 }
 
 export interface AdminMetrics {

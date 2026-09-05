@@ -83,17 +83,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
     }
   };
 
-  const handleToggleCommission = async (docente: User) => {
-    try {
-      await adminApi.updateCommission(docente.id, {
-        applyCommission: !docente.applyCommission,
-      });
-      loadData();
-    } catch (error) {
-      console.error('Error al actualizar comisión:', error);
-    }
-  };
-
   const handleUpdateStatus = async (id: string, newStatus: AppointmentStatus) => {
     try {
       await appointmentsApi.updateStatus(id, newStatus);
@@ -116,6 +105,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
       loadData();
     } catch (err) {
       console.error('Error al procesar liquidación:', err);
+    }
+  };
+
+  const handleUpdateMembership = async (
+    id: string,
+    membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE',
+  ) => {
+    try {
+      await adminApi.updateMembership(id, { membershipType });
+      setPayoutStatusMsg(`¡Membresía actualizada a ${membershipType}!`);
+      setTimeout(() => setPayoutStatusMsg(null), 3500);
+      loadData();
+    } catch (err) {
+      console.error('Error al actualizar membresía:', err);
     }
   };
 
@@ -189,7 +192,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
           }`}
         >
           <Users className="w-3.5 h-3.5" />
-          <span>Gestión de Docentes</span>
+          <span>Gestión de Membresías & Docentes</span>
           {pendingDocentes.length > 0 && (
             <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold text-[10px]">
               {pendingDocentes.length}
@@ -252,7 +255,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                 {metrics.totalDocentes} docentes registrados
               </p>
             </div>
-
           </div>
         </div>
       )}
@@ -385,7 +387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
         </div>
       )}
 
-      {/* Tab: DOCENTES */}
+      {/* Tab: DOCENTES & MEMBRESÍAS */}
       {activeTab === 'DOCENTES' && (
         <div className="space-y-6">
           {/* Solicitudes Pendientes */}
@@ -428,9 +430,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
             </div>
           )}
 
-          {/* Listado Completo de Docentes y Control de Retención 10% */}
+          {/* Listado Completo de Docentes y Control de Membresías */}
           <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-            <h3 className="text-lg font-bold text-white">Listado y Configuración de Docentes</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white">Gestión de Membresías y Retención de Docentes</h3>
+                <p className="text-xs text-slate-400">
+                  Asigná Plan Beca Vitalicio (Exento), Membresía de $50k/mes o Retención del 10% por clase.
+                </p>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px]">
@@ -438,8 +448,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                     <th className="p-3">Docente</th>
                     <th className="p-3">Email / Teléfono</th>
                     <th className="p-3">Estado Aprobación</th>
-                    <th className="p-3">Retención 10% Plataforma</th>
-                    <th className="p-3">Acciones</th>
+                    <th className="p-3">Membresía Actual</th>
+                    <th className="p-3 text-right">Acciones de Membresía</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
@@ -457,26 +467,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onOpenWhatsApp }
                         </span>
                       </td>
                       <td className="p-3">
-                        <button
-                          onClick={() => handleToggleCommission(docente)}
-                          className={`px-3 py-1 rounded-xl text-xs font-semibold transition ${
-                            docente.applyCommission !== false
-                              ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40 hover:bg-brand-500/30'
-                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                          }`}
-                        >
-                          {docente.applyCommission !== false ? '🟢 Retención 10% Activa' : '⚪ Sin Retención (0%)'}
-                        </button>
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
+                          docente.membershipType === 'LIFETIME_FREE' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' :
+                          docente.membershipType === 'MONTHLY_FIXED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+                          'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                        }`}>
+                          {docente.membershipType === 'LIFETIME_FREE' ? '👑 Plan Beca Vitalicio' :
+                           docente.membershipType === 'MONTHLY_FIXED' ? '💎 $50.000 / Mes (0%)' :
+                           '📊 10% por Clase'}
+                        </span>
                       </td>
-                      <td className="p-3 space-x-2">
-                        {docente.status !== 'APPROVED' && (
-                          <button
-                            onClick={() => handleApproveDocente(docente.id)}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-600/80 text-white text-[10px] font-bold"
-                          >
-                            Aprobar
-                          </button>
-                        )}
+                      <td className="p-3 text-right space-x-1.5">
+                        <button
+                          onClick={() => handleUpdateMembership(docente.id, 'LIFETIME_FREE')}
+                          className="px-2.5 py-1 rounded-lg bg-purple-600/80 hover:bg-purple-500 text-white text-[10px] font-bold transition-all"
+                          title="Otorgar Plan Beca / Conocidos de por vida ($0 y 0% comisión)"
+                        >
+                          👑 Plan Beca (Exento)
+                        </button>
+                        <button
+                          onClick={() => handleUpdateMembership(docente.id, 'MONTHLY_FIXED')}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-[10px] font-bold transition-all"
+                          title="Cambiar a Membresía Mensual Fija de $50.000"
+                        >
+                          💎 $50k / Mes
+                        </button>
+                        <button
+                          onClick={() => handleUpdateMembership(docente.id, 'COMMISSION_10')}
+                          className="px-2.5 py-1 rounded-lg bg-brand-600/80 hover:bg-brand-500 text-white text-[10px] font-bold transition-all"
+                          title="Cambiar a Comisión del 10% por clase"
+                        >
+                          📊 10% Clase
+                        </button>
                       </td>
                     </tr>
                   ))}

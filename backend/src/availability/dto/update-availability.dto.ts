@@ -49,5 +49,29 @@ export class UpdateAvailabilityDto {
 
   @IsOptional()
   subjectRates?: Record<string, number>;
+
+  @IsOptional()
+  @IsString()
+  supportedModalities?: 'VIRTUAL' | 'PRESENCIAL' | 'BOTH';
+
+  @IsOptional()
+  @IsString()
+  teacherAddress?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  offersAtStudentHome?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  allowGroupClasses?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  minGroupStudents?: number;
+
+  @IsOptional()
+  @IsNumber()
+  maxGroupStudents?: number;
 }
 

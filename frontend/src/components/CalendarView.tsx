@@ -381,6 +381,29 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-1">
                         Alumno: <span className="font-semibold text-slate-100">{appointment.studentName}</span>
                       </p>
+                      {/* Modality & Group Badges */}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          appointment.modality === 'PRESENCIAL'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                        }`}>
+                          {appointment.modality === 'PRESENCIAL' ? '📍 Presencial' : '🎥 Virtual (Online)'}
+                        </span>
+
+                        {appointment.classType === 'GROUP' && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            👥 Grupal ({appointment.enrolledCount || 1}/{appointment.maxStudents || 5})
+                          </span>
+                        )}
+                      </div>
+
+                      {appointment.modality === 'PRESENCIAL' && appointment.classAddress && (
+                        <p className="text-[10px] text-amber-300 font-mono mt-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 truncate">
+                          📍 Lugar: {appointment.classAddress}
+                        </p>
+                      )}
+
                       {appointment.receiptRef && (
                         <p className="text-[11px] text-amber-300 font-mono mt-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 truncate">
                           Comprobante: {appointment.receiptRef}
@@ -438,25 +461,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         </button>
                       )}
 
-                      {/* Virtual Classroom Button */}
-                      {isClassroomActive(appointment) ? (
-                        <button
-                          onClick={() => onOpenClassroom(appointment)}
-                          className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs shadow-md shadow-brand-600/30 transition-all animate-pulse"
-                          title="Unirse al aula virtual HD en vivo"
-                        >
-                          <Video className="w-3.5 h-3.5" />
-                          <span>Entrar</span>
-                        </button>
-                      ) : (
-                        <button
-                          disabled
-                          className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-900 text-slate-500 font-medium text-[11px] border border-slate-800 cursor-not-allowed opacity-70"
-                          title={`Aula habilitada únicamente durante el horario de la clase (${appointment.startTime} hs)`}
-                        >
-                          <Lock className="w-3 h-3 text-slate-500" />
-                          <span>Habilitado {appointment.startTime} hs</span>
-                        </button>
+                      {/* Virtual Classroom Button (Only for Virtual classes!) */}
+                      {appointment.modality !== 'PRESENCIAL' && (
+                        isClassroomActive(appointment) ? (
+                          <button
+                            onClick={() => onOpenClassroom(appointment)}
+                            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs shadow-md shadow-brand-600/30 transition-all animate-pulse"
+                            title="Unirse al aula virtual HD en vivo"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            <span>Entrar</span>
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-900 text-slate-500 font-medium text-[11px] border border-slate-800 cursor-not-allowed opacity-70"
+                            title={`Aula habilitada únicamente durante el horario de la clase (${appointment.startTime} hs)`}
+                          >
+                            <Lock className="w-3 h-3 text-slate-500" />
+                            <span>Habilitado {appointment.startTime} hs</span>
+                          </button>
+                        )
                       )}
                     </div>
                   </div>

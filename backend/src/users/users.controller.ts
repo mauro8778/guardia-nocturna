@@ -49,4 +49,34 @@ export class UsersController {
   ) {
     return this.usersService.updateDocenteCommission(id, body.commissionRate, body.applyCommission);
   }
+
+  @Patch('admin/docentes/:id/membership')
+  async updateMembership(
+    @Param('id') id: string,
+    @Body() body: { membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE'; membershipStatus?: string },
+  ) {
+    return this.usersService.updateTeacherMembership(id, body.membershipType, body.membershipStatus);
+  }
+
+  @Patch('docente/membership-payment')
+  async submitMembershipPayment(
+    @Body() body: { teacherId: string; teacherName: string; receiptRef?: string; receiptUrl?: string },
+  ) {
+    return this.usersService.submitMembershipPayment(
+      body.teacherId,
+      body.teacherName,
+      body.receiptRef,
+      body.receiptUrl,
+    );
+  }
+
+  @Get('admin/membership-payments')
+  async getMembershipPayments() {
+    return this.usersService.getMembershipPayments();
+  }
+
+  @Patch('admin/membership-payments/:id/approve')
+  async approveMembershipPayment(@Param('id') id: string) {
+    return this.usersService.approveMembershipPayment(id);
+  }
 }

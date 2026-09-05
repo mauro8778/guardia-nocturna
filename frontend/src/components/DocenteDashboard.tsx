@@ -175,6 +175,19 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
   const revisionCount = appointments.filter((a) => a.status === 'RECEIPT_SUBMITTED').length;
   const pagadosCount = appointments.filter((a) => a.status === 'CONFIRMED_PAID').length;
   
+  const [supportedModalities, setSupportedModalities] = useState<'VIRTUAL' | 'PRESENCIAL' | 'BOTH'>(availability?.supportedModalities ?? 'BOTH');
+  const [teacherAddress, setTeacherAddress] = useState<string>(availability?.teacherAddress ?? '');
+  const [offersAtStudentHome, setOffersAtStudentHome] = useState<boolean>(availability?.offersAtStudentHome ?? false);
+  const [allowGroupClasses, setAllowGroupClasses] = useState<boolean>(availability?.allowGroupClasses ?? false);
+  const [minGroupStudents, setMinGroupStudents] = useState<number>(availability?.minGroupStudents ?? 1);
+  const [maxGroupStudents, setMaxGroupStudents] = useState<number>(availability?.maxGroupStudents ?? 5);
+
+  const [previewReceiptUrl, setPreviewReceiptUrl] = useState<string | null>(null);
+
+  // Estimado de ingresos
+  const totalRecaudado = pagadosCount * hourlyRate;
+  const totalRevision = revisionCount * hourlyRate;
+
   const handleSaveAvailability = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingConfig(true);
@@ -192,6 +205,12 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
         subjectRates,
         availableDays,
         subjects: subjectsList,
+        supportedModalities,
+        teacherAddress,
+        offersAtStudentHome,
+        allowGroupClasses,
+        minGroupStudents,
+        maxGroupStudents,
       });
       showToast('¡Configuración de disponibilidad guardada con éxito!');
     } catch (err) {
@@ -202,43 +221,8 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
     }
   };
 
-  // Estimado de ingresos
-  const totalRecaudado = pagadosCount * hourlyRate;
-  const totalRevision = revisionCount * hourlyRate;
-
-  const [previewReceiptUrl, setPreviewReceiptUrl] = useState<string | null>(null);
-
   return (
     <div className="w-full space-y-6 animate-fade-in">
-      {/* Receipt Image / PDF Lightbox Modal */}
-      {previewReceiptUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="relative max-w-3xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col items-center space-y-4 max-h-[90vh]">
-            <button
-              onClick={() => setPreviewReceiptUrl(null)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800 transition-colors"
-            >
-              ✕
-            </button>
-
-            <h3 className="text-lg font-bold text-white">Comprobante de Pago Adjunto</h3>
-
-            {previewReceiptUrl.startsWith('data:application/pdf') ? (
-              <iframe src={previewReceiptUrl} className="w-full h-96 rounded-2xl border border-slate-800" title="Comprobante PDF" />
-            ) : (
-              <img src={previewReceiptUrl} alt="Comprobante de pago" className="max-h-[70vh] w-auto object-contain rounded-2xl border border-slate-800 shadow-2xl" />
-            )}
-
-            <button
-              onClick={() => setPreviewReceiptUrl(null)}
-              className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
-            >
-              Cerrar Vista Previa
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-50 animate-bounce">
@@ -247,6 +231,29 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Membership & Free Trial Status Banner */}
+      <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-slate-950 border border-purple-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold shrink-0">
+            🎁
+          </div>
+          <div>
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              Membresía Docente: <span className="text-purple-300">10 Días de Prueba Gratuita Activa</span>
+            </h3>
+            <p className="text-slate-400 text-[11px]">
+              Tu cuenta tiene acceso completo a la grilla pública sin costo. Podés dictar clases presenciales y virtuales.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 shrink-0">
+          <span className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-200 border border-purple-500/40 font-mono font-bold">
+            10 Días Gratis 🟢
+          </span>
+        </div>
+      </div>
 
       {/* Dashboard Top Header */}
       <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

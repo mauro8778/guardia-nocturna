@@ -61,6 +61,9 @@ export class UsersService implements OnModuleInit {
     role?: string;
     status?: string;
   }): Promise<User> {
+    const isTeacher = userData.role === 'ADMIN';
+    const trialEndsAt = isTeacher ? new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) : null;
+
     return this.prisma.user.create({
       data: {
         email: userData.email,
@@ -68,9 +71,12 @@ export class UsersService implements OnModuleInit {
         fullName: userData.fullName,
         phone: userData.phone || null,
         role: userData.role || 'STUDENT',
-        status: userData.status || (userData.role === 'ADMIN' ? 'PENDING_APPROVAL' : 'APPROVED'),
+        status: userData.status || (isTeacher ? 'PENDING_APPROVAL' : 'APPROVED'),
         commissionRate: 0.10,
         applyCommission: true,
+        membershipType: 'COMMISSION_10',
+        membershipStatus: isTeacher ? 'ACTIVE_TRIAL' : 'APPROVED',
+        trialEndsAt,
       },
     });
   }
@@ -128,6 +134,85 @@ export class UsersService implements OnModuleInit {
     return this.prisma.user.update({
       where: { id },
       data: dataToUpdate,
+    });
+  }
+
+  async updateTeacherMembership(
+    id: string,
+    membershipType: 'COMMISSION_10' | 'MONTHLY_FIXED' | 'LIFETIME_FREE',
+    membershipStatus?: string,
+  ): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('Docente no encontrado');
+
+    let statusToSet = membershipStatus || user.membershipStatus;
+    let applyCommission = user.applyCommission;
+
+    if (membershipType === 'LIFETIME_FREE') {
+      statusToSet = 'EXEMPT';
+      applyCommission = false;
+    } else if (membershipType === 'MONTHLY_FIXED') {
+      applyCommission = false;
+      if (statusToSet === 'EXEMPT') statusToSet = 'ACTIVE_PAID';
+    } else if (membershipType === 'COMMISSION_10') {
+      applyCommission = true;
+      if (statusToSet === 'EXEMPT') statusToSet = 'ACTIVE_PAID';
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        membershipType,
+        membershipStatus: statusToSet,
+        applyCommission,
+      },
+    });
+  }
+
+  async submitMembershipPayment(
+    teacherId: string,
+    teacherName: string,
+    receiptRef?: string,
+    receiptUrl?: string,
+  ) {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    return this.prisma.teacherMembershipPayment.create({
+      data: {
+        teacherId,
+        teacherName,
+        amount: 50000,
+        receiptRef: receiptRef || 'N/A',
+        receiptUrl: receiptUrl || null,
+        status: 'PENDING_APPROVAL',
+        periodMonth: currentMonth,
+      },
+    });
+  }
+
+  async getMembershipPayments() {
+    return this.prisma.teacherMembershipPayment.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async approveMembershipPayment(paymentId: string) {
+    const payment = await this.prisma.teacherMembershipPayment.findUnique({
+      where: { id: paymentId },
+    });
+    if (!payment) throw new NotFoundException('Pago de membresía no encontrado');
+
+    await this.prisma.teacherMembershipPayment.update({
+      where: { id: paymentId },
+      data: { status: 'APPROVED' },
+    });
+
+    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    return this.prisma.user.update({
+      where: { id: payment.teacherId },
+      data: {
+        membershipStatus: 'ACTIVE_PAID',
+        membershipPaidUntil: thirtyDaysFromNow,
+      },
     });
   }
 
