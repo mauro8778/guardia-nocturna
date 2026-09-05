@@ -67,15 +67,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   // Cálculo automático de la Hora Fin en base a las horas seleccionadas
-  const computeEndTime = (start: string, duration: number) => {
-    const [h, m] = start.split(':').map(Number);
-    const endH = (h + duration).toString().padStart(2, '0');
-    const minutesStr = (m || 0).toString().padStart(2, '0');
+  const computeEndTime = (start?: string, duration: number = 1) => {
+    if (!start || typeof start !== 'string' || !start.includes(':')) return '19:00';
+    const [hStr, mStr] = start.split(':');
+    const h = parseInt(hStr, 10) || 18;
+    const m = parseInt(mStr, 10) || 0;
+    const endH = (h + (duration || 1)).toString().padStart(2, '0');
+    const minutesStr = m.toString().padStart(2, '0');
     return `${endH}:${minutesStr}`;
   };
 
-  const calculatedEndTime = computeEndTime(selectedStartTime, durationHours);
-  const totalPrice = durationHours * hourlyRate;
+  const safeStartTime = selectedStartTime || '18:00';
+  const calculatedEndTime = computeEndTime(safeStartTime, durationHours);
+  const rate = typeof hourlyRate === 'number' && !isNaN(hourlyRate) && hourlyRate > 0 ? hourlyRate : 5000;
+  const totalPrice = (durationHours || 1) * rate;
 
   const [modality, setModality] = useState<'VIRTUAL' | 'PRESENCIAL'>('VIRTUAL');
   const [locationType, setLocationType] = useState<'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME'>('VIRTUAL');
@@ -379,7 +384,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 Seleccionar Cantidad de Horas:
               </label>
               <span className="text-[11px] text-slate-400 font-mono">
-                Valor: ${hourlyRate.toLocaleString('es-AR')} / hs
+                Valor: ${rate.toLocaleString('es-AR')} / hs
               </span>
             </div>
 
@@ -406,7 +411,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div>
               <span className="text-[11px] text-slate-400 block font-medium">Monto Total Estimado</span>
               <span className="text-xs text-brand-300">
-                {durationHours} {durationHours === 1 ? 'hora' : 'horas'} x ${hourlyRate.toLocaleString('es-AR')}
+                {durationHours} {durationHours === 1 ? 'hora' : 'horas'} x ${rate.toLocaleString('es-AR')}
               </span>
             </div>
             <div className="text-right">
