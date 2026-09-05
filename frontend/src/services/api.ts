@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Appointment, AppointmentStatus, AuthResponse, User, DocenteAvailability, AdminMetrics } from '../types';
 
-const API_BASE_URL = 'http://localhost:3050/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guardia-nocturna.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
