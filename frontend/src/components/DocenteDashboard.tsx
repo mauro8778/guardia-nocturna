@@ -65,6 +65,13 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
   const [monthlyFile, setMonthlyFile] = useState<{ name: string; dataUrl: string; type: string } | null>(null);
   const [isSubmittingMonthlyReceipt, setIsSubmittingMonthlyReceipt] = useState<boolean>(false);
 
+  const [hasDefinedPlan, setHasDefinedPlan] = useState<boolean>(() => {
+    if (!user) return false;
+    if (user.membershipStatus === 'ACTIVE_PAID' || user.membershipStatus === 'EXEMPT') return true;
+    const teacherId = user.id || (user as any).userId;
+    return localStorage.getItem(`plan_confirmed_${teacherId}`) === 'true';
+  });
+
   const handleMonthlyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -92,10 +99,12 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
       await adminApi.updateMyMembership({ teacherId, membershipType });
       setCurrentMembershipType(membershipType);
       updateUser({ membershipType });
-      showToast(`¡Plan de Membresía guardado: ${
+      localStorage.setItem(`plan_confirmed_${teacherId}`, 'true');
+      setHasDefinedPlan(true);
+      showToast(`¡Plan seleccionado guardado: ${
         membershipType === 'MONTHLY_FIXED' ? 'Fijo Mensual $50.000 (0% comisión)' : '10% por clase'
       }!`);
-      setIsMembershipModalOpen(false);
+      // Nota: El modal permanece abierto hasta que el usuario decida cerrarlo manualmente
     } catch (err) {
       console.error('Error al actualizar plan:', err);
       showToast('Error al actualizar el plan.');
@@ -114,10 +123,12 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
         receiptRef: monthlyReceiptRef.trim() || monthlyFile?.name || 'Comprobante Subido ($50k)',
         receiptUrl: monthlyFile?.dataUrl || undefined,
       });
+      localStorage.setItem(`plan_confirmed_${teacherId}`, 'true');
+      setHasDefinedPlan(true);
       showToast('¡Comprobante de Membresía Mensual ($50.000) enviado con éxito para aprobación!');
       setMonthlyReceiptRef('');
       setMonthlyFile(null);
-      setIsMembershipModalOpen(false);
+      // Nota: El modal permanece abierto para confirmación hasta que el usuario decida cerrarlo
     } catch (err) {
       console.error('Error al enviar comprobante:', err);
       showToast('Error al enviar comprobante.');
@@ -307,35 +318,37 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
         </div>
       )}
 
-      {/* Membership & Free Trial Status Banner */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-purple-950/90 via-slate-900 to-slate-950 border border-purple-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs shadow-xl">
-        <div className="flex items-start space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 font-bold shrink-0 text-lg">
-            🎁
+      {/* Membership & Free Trial Status Banner (Se oculta una vez que el docente definió su plan) */}
+      {!hasDefinedPlan && user?.membershipStatus !== 'ACTIVE_PAID' && user?.membershipStatus !== 'EXEMPT' && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-purple-950/90 via-slate-900 to-slate-950 border border-purple-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs shadow-xl">
+          <div className="flex items-start space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 font-bold shrink-0 text-lg">
+              🎁
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-white text-sm flex flex-wrap items-center gap-2">
+                Membresía Docente: <span className="text-purple-300 font-extrabold">10 Días de Prueba Gratuita Activa</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-[10px] font-extrabold">
+                  10 Días Gratis 🟢
+                </span>
+              </h3>
+              <p className="text-slate-300 text-xs">
+                Tenés acceso total y gratuito a la grilla online. Al finalizar o durante la prueba podés elegir tu plan: <span className="text-amber-300 font-semibold">10% por clase</span> o <span className="text-emerald-300 font-semibold">$50.000 mensual (0% comisión)</span>.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="font-bold text-white text-sm flex flex-wrap items-center gap-2">
-              Membresía Docente: <span className="text-purple-300 font-extrabold">10 Días de Prueba Gratuita Activa</span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-[10px] font-extrabold">
-                10 Días Gratis 🟢
-              </span>
-            </h3>
-            <p className="text-slate-300 text-xs">
-              Tenés acceso total y gratuito a la grilla online. Al finalizar o durante la prueba podés elegir tu plan: <span className="text-amber-300 font-semibold">10% por clase</span>, <span className="text-emerald-300 font-semibold">$50.000 mensual (0% comisión)</span> o solicitar <span className="text-purple-300 font-semibold">Plan Beca VIP</span>.
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center space-x-2 shrink-0 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={() => setIsMembershipModalOpen(true)}
-            className="w-full md:w-auto px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center space-x-1.5"
-          >
-            <span>👑 Elegir / Modificar Mi Plan</span>
-          </button>
+          <div className="flex items-center space-x-2 shrink-0 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsMembershipModalOpen(true)}
+              className="w-full md:w-auto px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center space-x-1.5"
+            >
+              <span>👑 Elegir / Modificar Mi Plan</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Dashboard Top Header */}
       <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
