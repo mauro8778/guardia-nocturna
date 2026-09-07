@@ -91,11 +91,15 @@ export class AvailabilityService {
   }
 
   async getAllPublicAvailabilities(params?: GetPublicAvailabilityParams): Promise<FormattedAvailability[]> {
+    const SUPERADMIN_EMAIL = 'maurodiaz8778@gmail.com';
     const now = new Date();
+
     const approvedTeachers = await this.prisma.user.findMany({
       where: {
         role: { in: ['TEACHER', 'ADMIN'] },
         status: 'APPROVED',
+        // El superadmin nunca aparece en el listado público
+        email: { not: SUPERADMIN_EMAIL },
         OR: [
           { membershipStatus: { in: ['ACTIVE_TRIAL', 'ACTIVE_PAID', 'EXEMPT'] } },
           { trialEndsAt: { gte: now } },

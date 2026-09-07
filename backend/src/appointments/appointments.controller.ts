@@ -13,7 +13,14 @@ import {
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-status.dto';
+import { SubmitReceiptDto } from './dto/submit-receipt.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
+const SUPERADMIN_EMAIL = 'maurodiaz8778@gmail.com';
+
+interface AuthReq {
+  user: { userId: string; role: string; fullName: string; email: string };
+}
 
 @Controller('appointments')
 export class AppointmentsController {
@@ -25,8 +32,10 @@ export class AppointmentsController {
     @Query('teacherId') teacherId?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Request() req?: { user?: { email?: string } },
   ) {
-    return this.appointmentsService.findAll(date, teacherId, status, search);
+    const isSuperAdmin = req?.user?.email === SUPERADMIN_EMAIL;
+    return this.appointmentsService.findAll(date, teacherId, status, search, isSuperAdmin);
   }
 
   @Get(':id')
@@ -38,12 +47,17 @@ export class AppointmentsController {
   @Post()
   async create(
     @Body() createDto: CreateAppointmentDto,
-    @Request() req: { user: { userId: string; fullName: string } },
+    @Request() req: AuthReq,
   ) {
+    const isSuperAdmin = req.user.email === SUPERADMIN_EMAIL;
+    // isGhostTest puede venir del body (enviado por el frontend en modo fantasma)
+    // pero solo se acepta si el solicitante es el superadmin
+    const isGhostTest = isSuperAdmin && (createDto.isGhostTest === true);
     return this.appointmentsService.create(
       createDto,
       req.user.userId,
       req.user.fullName,
+      isGhostTest,
     );
   }
 
@@ -51,7 +65,7 @@ export class AppointmentsController {
   @Post(':id/receipt')
   async submitReceipt(
     @Param('id') id: string,
-    @Body() receiptDto: import('./dto/submit-receipt.dto').SubmitReceiptDto,
+    @Body() receiptDto: SubmitReceiptDto,
     @Request() req: { user: { userId: string } },
   ) {
     return this.appointmentsService.submitReceipt(id, receiptDto, req.user.userId);

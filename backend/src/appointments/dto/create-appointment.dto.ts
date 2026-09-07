@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class CreateAppointmentDto {
   @IsNotEmpty({ message: 'La fecha es obligatoria' })
@@ -56,5 +56,9 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString()
   classType?: 'INDIVIDUAL' | 'GROUP';
-}
 
+  /** Flag de turno fantasma — solo enviado por el superadmin en modo simulación */
+  @IsOptional()
+  @IsBoolean()
+  isGhostTest?: boolean;
+}

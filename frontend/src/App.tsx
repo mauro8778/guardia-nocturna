@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { GhostModeProvider, useGhostMode } from './context/GhostModeContext';
 import { Navbar } from './components/Navbar';
 import { CalendarView } from './components/CalendarView';
 import { AuthModal } from './components/AuthModal';
@@ -10,6 +11,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { VirtualClassroomModal } from './components/VirtualClassroomModal';
 import { StudentOnboarding } from './components/StudentOnboarding';
+import { GhostModeSwitcher } from './components/GhostModeSwitcher';
 import { appointmentsApi, availabilityApi } from './services/api';
 import { socket } from './services/socket';
 import { Appointment, AppointmentStatus, DocenteAvailability } from './types';
@@ -17,6 +19,7 @@ import { Info } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const { user } = useAuth();
+  const { ghostRole, isSuperAdmin, isGhostStudent, isGhostTeacher } = useGhostMode();
 
   // Navigation Tab State (CALENDAR vs DASHBOARD)
   const [activeTab, setActiveTab] = useState<'CALENDAR' | 'DASHBOARD'>('CALENDAR');
@@ -232,9 +235,20 @@ const MainApp: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* Render View based on activeTab and User Role */}
-        {activeTab === 'DASHBOARD' && user?.role === 'ADMIN' ? (
-          user.email === 'maurodiaz8778@gmail.com' ? (
+        {/* Render View based on activeTab, User Role y Ghost Mode */}
+        {activeTab === 'DASHBOARD' && user?.role === 'ADMIN' && !isGhostStudent ? (
+          // Superadmin en modo REAL_ADMIN o GHOST_TEACHER ve el dashboard
+          isGhostTeacher ? (
+            <DocenteDashboard
+              availability={activeTeacher}
+              onUpdateAvailability={handleUpdateAvailability}
+              onOpenClassroom={(appt) => {
+                setSelectedClassroomAppt(appt);
+                setIsClassroomOpen(true);
+              }}
+              onOpenWhatsApp={(appt, customMsg) => handleOpenWhatsAppModal(appt, customMsg)}
+            />
+          ) : isSuperAdmin && ghostRole === 'REAL_ADMIN' ? (
             <AdminDashboard
               onOpenWhatsApp={(appt, customMsg) => handleOpenWhatsAppModal(appt, customMsg)}
             />
@@ -337,6 +351,9 @@ const MainApp: React.FC = () => {
       <footer className="border-t border-slate-800 bg-slate-900/60 py-6 text-center text-xs text-slate-400">
         <p>© 2026 Guardia Docente. Todos los derechos reservados. Clases particulares y turnos online.</p>
       </footer>
+
+      {/* Ghost Mode Switcher — SOLO visible para el superadmin */}
+      <GhostModeSwitcher />
     </div>
   );
 };
@@ -344,7 +361,9 @@ const MainApp: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <MainApp />
+      <GhostModeProvider>
+        <MainApp />
+      </GhostModeProvider>
     </AuthProvider>
   );
 };

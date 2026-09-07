@@ -58,6 +58,7 @@ model Appointment {
   classType        String   @default("INDIVIDUAL")
   maxStudents      Int      @default(1)
   enrolledCount    Int      @default(1)
+  isGhostTest      Boolean  @default(false)
   createdAt        DateTime @default(now())
 
   @@map("appointments")

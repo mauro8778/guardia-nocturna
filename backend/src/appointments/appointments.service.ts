@@ -34,6 +34,7 @@ export class AppointmentsService {
     teacherId?: string,
     status?: string,
     search?: string,
+    isSuperAdmin?: boolean,
   ): Promise<Appointment[]> {
     // Run cleanup asynchronously without blocking the read latency
     this.cleanupExpiredDrafts().catch((err) =>
@@ -44,6 +45,11 @@ export class AppointmentsService {
     if (date) whereClause.date = date;
     if (teacherId) whereClause.teacherId = teacherId;
     if (status) whereClause.status = status;
+
+    // Los turnos fantasma del admin son invisibles para todos salvo el superadmin
+    if (!isSuperAdmin) {
+      whereClause.isGhostTest = false;
+    }
 
     if (search && search.trim() !== '') {
       const cleanSearch = search.trim();
@@ -74,12 +80,16 @@ export class AppointmentsService {
     dto: CreateAppointmentDto,
     studentId: string,
     studentName: string,
+    isGhostTest: boolean = false,
   ): Promise<Appointment> {
-    const studentUser = await this.prisma.user.findUnique({ where: { id: studentId } });
-    if (studentUser && studentUser.role === 'ADMIN') {
-      throw new ForbiddenException(
-        'Los profesores y administradores no pueden reservar turnos como alumnos. Por favor iniciá sesión con una cuenta de alumno.',
-      );
+    // Solo bloquear si NO es un turno de prueba del superadmin
+    if (!isGhostTest) {
+      const studentUser = await this.prisma.user.findUnique({ where: { id: studentId } });
+      if (studentUser && studentUser.role === 'ADMIN') {
+        throw new ForbiddenException(
+          'Los profesores y administradores no pueden reservar turnos como alumnos. Por favor iniciá sesión con una cuenta de alumno.',
+        );
+      }
     }
 
     let targetTeacherId = dto.teacherId;
@@ -245,26 +255,28 @@ export class AppointmentsService {
         classType: isGroupBooking ? 'GROUP' : 'INDIVIDUAL',
         maxStudents: maxGroupStudents,
         enrolledCount: 1,
+        isGhostTest,
       },
     });
 
-    // Despachar alerta de WhatsApp vía Gateway
-    this.whatsappGateway.sendNotification({
-      recipientPhone: teacherAvail?.teacherPhone || '5491133231465',
-      recipientRole: 'TEACHER',
-      event: 'APPOINTMENT_RESERVED',
-      data: {
-        studentName,
-        teacherName: targetTeacherName,
-        subject: dto.subject,
-        date: dto.date,
-        startTime: dto.startTime,
-        endTime: dto.endTime,
-        totalAmount,
-      },
-    });
-
-    this.eventsGateway.notifyAppointmentCreated(newAppointment);
+    // No enviar notificaciones de WhatsApp ni WS para turnos fantasma
+    if (!isGhostTest) {
+      this.whatsappGateway.sendNotification({
+        recipientPhone: teacherAvail?.teacherPhone || '5491133231465',
+        recipientRole: 'TEACHER',
+        event: 'APPOINTMENT_RESERVED',
+        data: {
+          studentName,
+          teacherName: targetTeacherName,
+          subject: dto.subject,
+          date: dto.date,
+          startTime: dto.startTime,
+          endTime: dto.endTime,
+          totalAmount,
+        },
+      });
+      this.eventsGateway.notifyAppointmentCreated(newAppointment);
+    }
     return newAppointment;
   }
 
