@@ -3,6 +3,7 @@ import { AiService } from './ai.service';
 import { GenerateEvaluationDto } from './dto/generate-evaluation.dto';
 import { GenerateComunicadoDto } from './dto/generate-comunicado.dto';
 import { GeneratePlanificacionDto } from './dto/generate-planificacion.dto';
+import { AiGenerationResultDto } from './dto/ai-generation-result.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -21,7 +22,7 @@ export class AiController {
   async generateEvaluation(
     @Body() dto: GenerateEvaluationDto,
     @Request() req: AuthenticatedRequest,
-  ) {
+  ): Promise<AiGenerationResultDto> {
     return this.aiService.generateEvaluation(dto, req.user.userId);
   }
 
@@ -29,7 +30,7 @@ export class AiController {
   async generateComunicado(
     @Body() dto: GenerateComunicadoDto,
     @Request() req: AuthenticatedRequest,
-  ) {
+  ): Promise<AiGenerationResultDto> {
     return this.aiService.generateComunicado(dto, req.user.userId);
   }
 
@@ -37,7 +38,7 @@ export class AiController {
   async generatePlanificacion(
     @Body() dto: GeneratePlanificacionDto,
     @Request() req: AuthenticatedRequest,
-  ) {
+  ): Promise<AiGenerationResultDto> {
     return this.aiService.generatePlanificacion(dto, req.user.userId);
   }
 }

@@ -8,14 +8,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GenerateEvaluationDto } from './dto/generate-evaluation.dto';
 import { GenerateComunicadoDto } from './dto/generate-comunicado.dto';
 import { GeneratePlanificacionDto } from './dto/generate-planificacion.dto';
+import { AiGenerationResultDto } from './dto/ai-generation-result.dto';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 10;
-
-interface AiGenerationResult {
-  content: string;
-  generatedAt: string;
-}
 
 @Injectable()
 export class AiService {
@@ -78,7 +74,7 @@ export class AiService {
     }
   }
 
-  async generateEvaluation(dto: GenerateEvaluationDto, userId: string): Promise<AiGenerationResult> {
+  async generateEvaluation(dto: GenerateEvaluationDto, userId: string): Promise<AiGenerationResultDto> {
     this.checkRateLimit(userId);
 
     const typeLabel =
@@ -112,7 +108,7 @@ Respondé íntegramente en español. El tono debe ser académico y formal.`;
     return { content, generatedAt: new Date().toISOString() };
   }
 
-  async generateComunicado(dto: GenerateComunicadoDto, userId: string): Promise<AiGenerationResult> {
+  async generateComunicado(dto: GenerateComunicadoDto, userId: string): Promise<AiGenerationResultDto> {
     this.checkRateLimit(userId);
 
     const prompt = `Sos ${dto.teacherName}, un docente particular profesional que dicta clases de ${dto.subjects}.
@@ -130,7 +126,7 @@ REQUISITOS:
     return { content, generatedAt: new Date().toISOString() };
   }
 
-  async generatePlanificacion(dto: GeneratePlanificacionDto, userId: string): Promise<AiGenerationResult> {
+  async generatePlanificacion(dto: GeneratePlanificacionDto, userId: string): Promise<AiGenerationResultDto> {
     this.checkRateLimit(userId);
 
     const periodsLabel =
