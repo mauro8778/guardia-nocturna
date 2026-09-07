@@ -1,7 +1,18 @@
 import axios from 'axios';
-import { Appointment, AppointmentStatus, AuthResponse, User, DocenteAvailability, AdminMetrics } from '../types';
+import {
+  Appointment,
+  AppointmentStatus,
+  AuthResponse,
+  User,
+  DocenteAvailability,
+  AdminMetrics,
+  AiGenerationResult,
+  GenerateEvaluationPayload,
+  GenerateComunicadoPayload,
+  GeneratePlanificacionPayload,
+} from '../types';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3050/api';
+const API_BASE_URL = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? 'http://localhost:3050/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -90,8 +101,14 @@ export const appointmentsApi = {
 };
 
 export const availabilityApi = {
-  getAllPublic: async (): Promise<DocenteAvailability[]> => {
-    const response = await api.get<DocenteAvailability[]>('/availability/public');
+  getAllPublic: async (params?: { lat?: number; lng?: number; radiusKm?: number; subjectFilter?: string }): Promise<DocenteAvailability[]> => {
+    const queryParams: Record<string, string> = {};
+    if (params?.lat !== undefined) queryParams.lat = String(params.lat);
+    if (params?.lng !== undefined) queryParams.lng = String(params.lng);
+    if (params?.radiusKm !== undefined) queryParams.radiusKm = String(params.radiusKm);
+    if (params?.subjectFilter) queryParams.subjectFilter = params.subjectFilter;
+
+    const response = await api.get<DocenteAvailability[]>('/availability/public', { params: queryParams });
     return response.data;
   },
 
@@ -195,5 +212,19 @@ export const paymentsApi = {
   },
 };
 
+export const aiApi = {
+  generateEvaluation: async (data: GenerateEvaluationPayload): Promise<AiGenerationResult> => {
+    const response = await api.post<AiGenerationResult>('/ai/evaluation', data);
+    return response.data;
+  },
 
+  generateComunicado: async (data: GenerateComunicadoPayload): Promise<AiGenerationResult> => {
+    const response = await api.post<AiGenerationResult>('/ai/comunicado', data);
+    return response.data;
+  },
 
+  generatePlanificacion: async (data: GeneratePlanificacionPayload): Promise<AiGenerationResult> => {
+    const response = await api.post<AiGenerationResult>('/ai/planificacion', data);
+    return response.data;
+  },
+};

@@ -84,6 +84,9 @@ model Availability {
   allowGroupClasses   Boolean  @default(false)
   minGroupStudents    Int      @default(1)
   maxGroupStudents    Int      @default(5)
+  teacherLat          Float?
+  teacherLng          Float?
+  zone                String?
   updatedAt           DateTime @updatedAt
 
   @@map("availability")

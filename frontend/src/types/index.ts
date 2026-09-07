@@ -80,6 +80,10 @@ export interface DocenteAvailability {
   allowGroupClasses?: boolean;
   minGroupStudents?: number;
   maxGroupStudents?: number;
+  teacherLat?: number;
+  teacherLng?: number;
+  zone?: string;
+  distanceKm?: number;
 }
 
 export interface TeacherMembershipPayment {
@@ -140,5 +144,37 @@ export interface PreferenceResponse {
   teacherName: string;
 }
 
+// ─── Tipos para Herramientas IA ──────────────────────────────────────────────
 
+export interface AiGenerationResult {
+  content: string;
+  generatedAt: string;
+}
 
+export interface GenerateEvaluationPayload {
+  subject: string;
+  academicLevel: string;
+  questionType: 'multiple_choice' | 'open' | 'mixed';
+  questionCount: number;
+  difficulty: 'facil' | 'medio' | 'dificil';
+  additionalContext: string;
+}
+
+export interface GenerateComunicadoPayload {
+  teacherName: string;
+  subjects: string;
+  motivo: string;
+  destinatario: string;
+}
+
+export interface GeneratePlanificacionPayload {
+  subject: string;
+  academicLevel: string;
+  periodType: 'bimestral' | 'trimestral' | 'cuatrimestral';
+}
+
+export interface StudentLocationData {
+  lat: number;
+  lng: number;
+  displayName: string;
+}

@@ -25,6 +25,7 @@ import {
 import { Appointment, AppointmentStatus, DocenteAvailability } from '../types';
 import { appointmentsApi, availabilityApi, adminApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { AiToolsPanel } from './AiToolsPanel';
 
 interface DocenteDashboardProps {
   availability: DocenteAvailability | null;
@@ -137,8 +138,8 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
     }
   };
 
-  // SubTab (Turnos vs Disponibilidad)
-  const [subTab, setSubTab] = useState<'TURNOS' | 'DISPONIBILIDAD'>('TURNOS');
+  // SubTab (Turnos vs Disponibilidad vs IA)
+  const [subTab, setSubTab] = useState<'TURNOS' | 'DISPONIBILIDAD' | 'IA'>('TURNOS');
 
   // Form State para Configuración de Disponibilidad
   const [teacherName, setTeacherName] = useState<string>(availability?.teacherName ?? '');
@@ -411,9 +412,23 @@ export const DocenteDashboard: React.FC<DocenteDashboardProps> = ({
           <Settings className="w-4 h-4" />
           <span>Configuración de Horarios y Disponibilidad</span>
         </button>
+
+        <button
+          onClick={() => setSubTab('IA')}
+          className={`flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            subTab === 'IA'
+              ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20'
+              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <span>🤖</span>
+          <span>Herramientas IA</span>
+        </button>
       </div>
 
-      {subTab === 'DISPONIBILIDAD' ? (
+      {subTab === 'IA' ? (
+        <AiToolsPanel />
+      ) : subTab === 'DISPONIBILIDAD' ? (
         /* Availability Configuration Form */
         <form onSubmit={handleSaveAvailability} className="glass-panel p-4 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">

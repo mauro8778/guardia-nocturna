@@ -24,41 +24,44 @@ export interface FormattedAvailability {
   allowGroupClasses: boolean;
   minGroupStudents: number;
   maxGroupStudents: number;
+  teacherLat?: number;
+  teacherLng?: number;
+  zone?: string;
+  distanceKm?: number;
+}
+
+export interface GetPublicAvailabilityParams {
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+  subjectFilter?: string;
+}
+
+/** Calcula distancia en km entre dos puntos usando la fórmula de Haversine */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 @Injectable()
 export class AvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private formatAvailability(config: Availability): FormattedAvailability {
-    let availableDays: number[] = [1, 2, 3, 4, 5, 6];
-    let subjects: string[] = ['Matemática / Álgebra'];
-    let subjectRates: Record<string, number> = {};
-
+  private parseJsonField<T>(raw: string | null | undefined, fallback: T): T {
+    if (!raw) return fallback;
     try {
-      if (config.availableDays) {
-        availableDays = JSON.parse(config.availableDays);
-      }
+      return JSON.parse(raw) as T;
     } catch {
-      availableDays = [1, 2, 3, 4, 5, 6];
+      return fallback;
     }
+  }
 
-    try {
-      if (config.subjects) {
-        subjects = JSON.parse(config.subjects);
-      }
-    } catch {
-      subjects = ['Matemática / Álgebra'];
-    }
-
-    try {
-      if (config.subjectRates) {
-        subjectRates = JSON.parse(config.subjectRates);
-      }
-    } catch {
-      subjectRates = {};
-    }
-
+  private formatAvailability(config: Availability, distanceKm?: number): FormattedAvailability {
     return {
       id: config.id,
       teacherId: config.teacherId,
@@ -69,21 +72,25 @@ export class AvailabilityService {
       is24Hours: config.is24Hours ?? false,
       startHour: config.startHour ?? 8,
       endHour: config.endHour ?? 22,
-      availableDays,
-      subjects,
+      availableDays: this.parseJsonField<number[]>(config.availableDays, [1, 2, 3, 4, 5, 6]),
+      subjects: this.parseJsonField<string[]>(config.subjects, ['Matemática / Álgebra']),
       hourlyRate: config.hourlyRate ?? 5000,
       pricingType: (config.pricingType as 'PER_HOUR' | 'PER_SUBJECT') || 'PER_HOUR',
-      subjectRates,
+      subjectRates: this.parseJsonField<Record<string, number>>(config.subjectRates, {}),
       supportedModalities: (config.supportedModalities as 'VIRTUAL' | 'PRESENCIAL' | 'BOTH') || 'BOTH',
-      teacherAddress: config.teacherAddress || undefined,
+      teacherAddress: config.teacherAddress ?? undefined,
       offersAtStudentHome: config.offersAtStudentHome ?? false,
       allowGroupClasses: config.allowGroupClasses ?? false,
       minGroupStudents: config.minGroupStudents ?? 1,
       maxGroupStudents: config.maxGroupStudents ?? 5,
+      teacherLat: config.teacherLat ?? undefined,
+      teacherLng: config.teacherLng ?? undefined,
+      zone: config.zone ?? undefined,
+      ...(distanceKm !== undefined ? { distanceKm: Math.round(distanceKm * 10) / 10 } : {}),
     };
   }
 
-  async getAllPublicAvailabilities(): Promise<FormattedAvailability[]> {
+  async getAllPublicAvailabilities(params?: GetPublicAvailabilityParams): Promise<FormattedAvailability[]> {
     const now = new Date();
     const approvedTeachers = await this.prisma.user.findMany({
       where: {
@@ -100,13 +107,35 @@ export class AvailabilityService {
 
     const teacherIds = approvedTeachers.map((t) => t.id);
 
+    const subjectFilter = params?.subjectFilter?.trim();
     const configs = await this.prisma.availability.findMany({
       where: {
         teacherId: { in: teacherIds },
+        ...(subjectFilter
+          ? { subjects: { contains: subjectFilter } }
+          : {}),
       },
     });
 
-    return configs.map((c) => this.formatAvailability(c));
+    const formatted = configs.map((c) => {
+      if (params?.lat !== undefined && params?.lng !== undefined && c.teacherLat !== null && c.teacherLng !== null && c.teacherLat !== undefined && c.teacherLng !== undefined) {
+        const dist = haversineKm(params.lat, params.lng, c.teacherLat, c.teacherLng);
+        return this.formatAvailability(c, dist);
+      }
+      return this.formatAvailability(c);
+    });
+
+    // Si hay coordenadas, ordenar: primero docentes en radio, luego resto por distancia
+    if (params?.lat !== undefined && params?.lng !== undefined) {
+      const radiusKm = params.radiusKm ?? 15;
+      const inZone = formatted.filter((f) => f.distanceKm !== undefined && f.distanceKm <= radiusKm);
+      const outZone = formatted.filter((f) => f.distanceKm === undefined || f.distanceKm > radiusKm);
+      inZone.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+      outZone.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+      return [...inZone, ...outZone];
+    }
+
+    return formatted;
   }
 
   async getAvailabilityByTeacher(teacherId: string, teacherName?: string): Promise<FormattedAvailability> {
@@ -162,6 +191,9 @@ export class AvailabilityService {
     if (dto.allowGroupClasses !== undefined) updateData.allowGroupClasses = dto.allowGroupClasses;
     if (dto.minGroupStudents !== undefined) updateData.minGroupStudents = dto.minGroupStudents;
     if (dto.maxGroupStudents !== undefined) updateData.maxGroupStudents = dto.maxGroupStudents;
+    if (dto.teacherLat !== undefined) updateData.teacherLat = dto.teacherLat;
+    if (dto.teacherLng !== undefined) updateData.teacherLng = dto.teacherLng;
+    if (dto.zone !== undefined) updateData.zone = dto.zone;
 
     const updated = await this.prisma.availability.upsert({
       where: { teacherId },
@@ -186,10 +218,12 @@ export class AvailabilityService {
         allowGroupClasses: dto.allowGroupClasses ?? false,
         minGroupStudents: dto.minGroupStudents ?? 1,
         maxGroupStudents: dto.maxGroupStudents ?? 5,
+        teacherLat: dto.teacherLat ?? null,
+        teacherLng: dto.teacherLng ?? null,
+        zone: dto.zone ?? null,
       },
     });
 
     return this.formatAvailability(updated);
   }
 }
-

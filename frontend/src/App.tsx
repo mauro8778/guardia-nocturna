@@ -9,10 +9,11 @@ import { DocenteDashboard } from './components/DocenteDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { VirtualClassroomModal } from './components/VirtualClassroomModal';
+import { StudentOnboarding } from './components/StudentOnboarding';
 import { appointmentsApi, availabilityApi } from './services/api';
 import { socket } from './services/socket';
 import { Appointment, AppointmentStatus, DocenteAvailability } from './types';
-import { Sparkles, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const { user } = useAuth();
@@ -34,6 +35,12 @@ const MainApp: React.FC = () => {
     locationType?: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
     classType?: 'INDIVIDUAL' | 'GROUP';
   }>({});
+  const [onboardingFilters, setOnboardingFilters] = useState<{
+    subject: string;
+    locationType: 'VIRTUAL' | 'TEACHER_LOCATION' | 'STUDENT_HOME';
+    classType: 'INDIVIDUAL' | 'GROUP';
+    academicLevel: string;
+  }>({ subject: '', locationType: 'VIRTUAL', classType: 'INDIVIDUAL', academicLevel: 'Terciario / Universitario' });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Modales
@@ -244,22 +251,20 @@ const MainApp: React.FC = () => {
           )
         ) : (
           <>
-            {/* Hero Header Section */}
-            <div className="glass-panel rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-slate-800">
-              <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-brand-600/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative z-10 max-w-3xl space-y-3">
-                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-oat-200/10 border border-oat-300/30 text-oat-300 text-xs font-semibold">
-                  <Sparkles className="w-3.5 h-3.5 text-oat-300" />
-                  <span>Plataforma Online de Clases Particulares</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                  Reservá tu clase en <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-oat-300 to-brand-400">Guardia Docente</span>
-                </h2>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  Elegí la materia, el profesor/a y el horario disponible. El turno figura en <span className="text-amber-400 font-semibold">🟡 amarillo</span> al reservar y pasa a <span className="text-emerald-400 font-semibold">🟢 verde</span> al enviar tu comprobante.
-                </p>
-              </div>
-            </div>
+            {/* Onboarding de Alumno — Wizard de búsqueda previo al calendario */}
+            <StudentOnboarding
+              allAvailabilities={allAvailabilities}
+              selectedTeacherId={selectedTeacherId}
+              onTeacherSelect={(id) => {
+                setSelectedTeacherId(id);
+                const teacher = allAvailabilities.find((t) => t.teacherId === id);
+                if (teacher?.subjects?.[0]) setSelectedSubject(teacher.subjects[0]);
+              }}
+              onFiltersChange={(filters) => {
+                setOnboardingFilters(filters);
+                setSelectedSubject(filters.subject);
+              }}
+            />
 
             {/* Interactive Calendar View */}
             <CalendarView
@@ -292,11 +297,11 @@ const MainApp: React.FC = () => {
         onClose={() => setIsBookingOpen(false)}
         selectedDate={selectedDate}
         selectedStartTime={selectedStartTime}
-        initialSubject={selectedSubject}
-        initialAcademicLevel={prefilledBookingDetails.academicLevel}
-        initialModality={prefilledBookingDetails.modality}
-        initialLocationType={prefilledBookingDetails.locationType}
-        initialClassType={prefilledBookingDetails.classType}
+        initialSubject={prefilledBookingDetails.academicLevel ? selectedSubject : onboardingFilters.subject || selectedSubject}
+        initialAcademicLevel={prefilledBookingDetails.academicLevel ?? onboardingFilters.academicLevel}
+        initialModality={prefilledBookingDetails.modality ?? (onboardingFilters.locationType === 'VIRTUAL' ? 'VIRTUAL' : 'PRESENCIAL')}
+        initialLocationType={prefilledBookingDetails.locationType ?? onboardingFilters.locationType}
+        initialClassType={prefilledBookingDetails.classType ?? onboardingFilters.classType}
         hourlyRate={activeTeacher?.hourlyRate || 5000}
         availableSubjects={activeTeacher?.subjects}
         teacherId={activeTeacher?.teacherId}

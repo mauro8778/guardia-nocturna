@@ -1,4 +1,12 @@
-import { IsBoolean, IsNumber, IsOptional, IsArray, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsString,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class UpdateAvailabilityDto {
   @IsOptional()
@@ -73,5 +81,22 @@ export class UpdateAvailabilityDto {
   @IsOptional()
   @IsNumber()
   maxGroupStudents?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  teacherLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  teacherLng?: number;
+
+  @IsOptional()
+  @IsString()
+  zone?: string;
 }
+
 
