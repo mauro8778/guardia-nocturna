@@ -33,6 +33,16 @@ const ACADEMIC_LEVELS = [
   'Posgrado / Profesional',
 ];
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
     const res = await fetch(
@@ -104,6 +114,32 @@ export const StudentOnboarding: React.FC<StudentOnboardingProps> = ({
     );
   }, []);
 
+  const handleApplyManualZone = async () => {
+    const q = manualZone.trim();
+    if (!q) return;
+    setLocationStatus('loading');
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,
+        { headers: { 'Accept-Language': 'es' } }
+      );
+      const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        const shortName = data[0].display_name.split(',').slice(0, 3).join(',');
+        setStudentLocation({ lat, lng, displayName: shortName || q });
+        setLocationStatus('granted');
+      } else {
+        setStudentLocation({ lat: 0, lng: 0, displayName: q });
+        setLocationStatus('granted');
+      }
+    } catch {
+      setStudentLocation({ lat: 0, lng: 0, displayName: q });
+      setLocationStatus('granted');
+    }
+  };
+
   // Filtrar docentes según criterios
   const eligibleTeachers = allAvailabilities.filter((t) => {
     if (onlyVirtual && t.supportedModalities === 'PRESENCIAL') return false;
@@ -122,13 +158,26 @@ export const StudentOnboarding: React.FC<StudentOnboardingProps> = ({
   });
 
   // Separar docentes por zona
-  const RADIUS_KM = 15;
-  const inZone = eligibleTeachers.filter(
-    (t) => studentLocation && t.distanceKm !== undefined && t.distanceKm <= RADIUS_KM
-  );
-  const outZone = eligibleTeachers.filter(
-    (t) => !studentLocation || t.distanceKm === undefined || t.distanceKm > RADIUS_KM
-  );
+  const RADIUS_KM = 25;
+  const inZone = eligibleTeachers.filter((t) => {
+    if (!studentLocation) return false;
+    if (studentLocation.lat !== 0 && studentLocation.lng !== 0 && t.teacherLat && t.teacherLng) {
+      const dist = haversineKm(studentLocation.lat, studentLocation.lng, t.teacherLat, t.teacherLng);
+      return dist <= RADIUS_KM;
+    }
+    if (t.distanceKm !== undefined && t.distanceKm <= RADIUS_KM) {
+      return true;
+    }
+    if (studentLocation.displayName) {
+      const query = studentLocation.displayName.toLowerCase();
+      const teacherAddr = (t.teacherAddress || '').toLowerCase();
+      const teacherZone = (t.zone || '').toLowerCase();
+      return teacherAddr.includes(query) || teacherZone.includes(query) || query.includes(teacherAddr) || query.includes(teacherZone);
+    }
+    return false;
+  });
+
+  const outZone = eligibleTeachers.filter((t) => !inZone.includes(t));
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
@@ -267,58 +316,79 @@ export const StudentOnboarding: React.FC<StudentOnboardingProps> = ({
             </label>
           </div>
 
-          {locationStatus === 'idle' && (
-            <button
-              type="button"
-              onClick={requestGeolocation}
-              className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/40 text-brand-300 text-xs font-bold transition-all"
-            >
-              <Navigation className="w-4 h-4" />
-              <span>Detectar mi ubicación automáticamente</span>
-            </button>
+          {locationStatus === 'idle' && !studentLocation && (
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={requestGeolocation}
+                className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/40 text-brand-300 text-xs font-bold transition-all"
+              >
+                <Navigation className="w-4 h-4" />
+                <span>Detectar mi ubicación automáticamente</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowManualInput(true)}
+                className="text-xs text-slate-400 hover:text-white underline transition-colors"
+              >
+                Ingresar zona manualmente
+              </button>
+            </div>
           )}
 
           {locationStatus === 'loading' && (
             <div className="flex items-center space-x-2 text-xs text-slate-400">
               <Loader2 className="w-4 h-4 animate-spin text-brand-400" />
-              <span>Detectando ubicación...</span>
+              <span>Buscando zona...</span>
             </div>
           )}
 
-          {locationStatus === 'granted' && studentLocation && (
-            <div className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>📍 {studentLocation.displayName} — mostrando docentes más cercanos primero</span>
+          {studentLocation && (
+            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+              <div className="flex items-center space-x-2 truncate">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span className="truncate">📍 Zona activa: <strong>{studentLocation.displayName}</strong> — docentes cercanos primero</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setStudentLocation(null);
+                  setLocationStatus('idle');
+                  setShowManualInput(true);
+                }}
+                className="text-[11px] text-slate-400 hover:text-white underline shrink-0 ml-2"
+              >
+                Cambiar
+              </button>
             </div>
           )}
 
-          {locationStatus === 'denied' && (
-            <div className="flex items-center space-x-2 text-amber-400 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>Ubicación no disponible. Ingresá tu zona manualmente:</span>
+          {(showManualInput || locationStatus === 'denied') && !studentLocation && (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={manualZone}
+                  onChange={(e) => setManualZone(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleApplyManualZone();
+                  }}
+                  placeholder="Ej: Brasil 1513, Merlo / Caballito / Córdoba..."
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyManualZone}
+                  className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  Buscar Zona
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Presioná <strong>Buscar Zona</strong> o presiona Enter para calcular docentes cercanos a esa dirección.
+              </p>
             </div>
-          )}
-
-          {(showManualInput || locationStatus === 'denied') && (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={manualZone}
-                onChange={(e) => setManualZone(e.target.value)}
-                placeholder="Ej: Caballito, CABA / GBA Norte / Córdoba Capital..."
-                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
-              />
-            </div>
-          )}
-
-          {locationStatus === 'idle' && (
-            <button
-              type="button"
-              onClick={() => setShowManualInput(true)}
-              className="text-xs text-slate-500 hover:text-slate-300 underline transition-colors"
-            >
-              Prefiero ingresar mi zona manualmente
-            </button>
           )}
         </div>
       </div>

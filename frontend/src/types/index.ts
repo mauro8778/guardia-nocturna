@@ -154,9 +154,11 @@ export interface AiGenerationResult {
 export interface GenerateEvaluationPayload {
   subject: string;
   academicLevel: string;
-  questionType: 'multiple_choice' | 'open' | 'mixed';
+  questionType: 'multiple_choice' | 'open' | 'mixed' | 'practical_cases';
   questionCount: number;
-  difficulty: 'facil' | 'medio' | 'dificil';
+  difficulty: 'facil' | 'medio' | 'dificil' | 'exigente';
+  estimatedTime?: string;
+  skillsFocus?: string;
   additionalContext: string;
 }
 

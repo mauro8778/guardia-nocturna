@@ -9,9 +9,12 @@ import {
   Check,
   ChevronDown,
   AlertCircle,
+  Download,
+  FileText,
 } from 'lucide-react';
 import { aiApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { downloadAsWordDoc } from '../utils/docxExporter';
 import {
   AiGenerationResult,
   GenerateEvaluationPayload,
@@ -42,6 +45,8 @@ export const AiToolsPanel: React.FC = () => {
   const [evalQuestionType, setEvalQuestionType] = useState<GenerateEvaluationPayload['questionType']>('mixed');
   const [evalCount, setEvalCount] = useState(10);
   const [evalDifficulty, setEvalDifficulty] = useState<GenerateEvaluationPayload['difficulty']>('medio');
+  const [evalTime, setEvalTime] = useState('60 minutos');
+  const [evalSkills, setEvalSkills] = useState('Resolución de problemas prácticos y teoría');
   const [evalContext, setEvalContext] = useState('');
 
   // Comunicado form state
@@ -68,6 +73,8 @@ export const AiToolsPanel: React.FC = () => {
           questionType: evalQuestionType,
           questionCount: evalCount,
           difficulty: evalDifficulty,
+          estimatedTime: evalTime,
+          skillsFocus: evalSkills,
           additionalContext: evalContext,
         });
       } else if (activeTool === 'comunicado') {
@@ -181,54 +188,98 @@ export const AiToolsPanel: React.FC = () => {
       <div className="glass-panel rounded-3xl p-6 border border-slate-800 space-y-4">
         {activeTool === 'evaluation' && (
           <>
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-brand-400" />
-              Configurar Evaluación
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-brand-400" />
+                Configuración Avanzada de Evaluación
+              </h4>
+            </div>
+
+            {/* Banner Recomendaciones para Máxima Efectividad */}
+            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-200 text-xs space-y-2">
+              <div className="flex items-center gap-2 font-extrabold text-purple-300">
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>💡 Recomendaciones para generar la mejor evaluación:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-purple-200/90 leading-relaxed">
+                <li><strong>Especificá los temas:</strong> Detallá las unidades o conceptos específicos a evaluar para evitar consignas genéricas.</li>
+                <li><strong>Aclaraciones útiles:</strong> Indicá si el alumno dispone de tabla periódica, formulario, o uso de calculadora.</li>
+                <li><strong>Enfoque pedagógico:</strong> Definí si buscás evaluar conceptos teóricos de memoria o la resolución práctica de casos.</li>
+              </ul>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Materia / Tema *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Materia / Tema a Evaluar *</label>
                 <input
                   type="text"
                   value={evalSubject}
                   onChange={(e) => setEvalSubject(e.target.value)}
-                  placeholder="Ej: Álgebra Lineal — Sistemas de Ecuaciones"
+                  placeholder="Ej: Análisis Matemático — Derivadas e Integrales Definidas"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nivel Educativo</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">🎓 Nivel de Estudio</label>
                 <select value={evalLevel} onChange={(e) => setEvalLevel(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
                   {ACADEMIC_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Tipo de Preguntas</label>
-                <select value={evalQuestionType} onChange={(e) => setEvalQuestionType(e.target.value as GenerateEvaluationPayload['questionType'])} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
-                  <option value="multiple_choice">Opción Múltiple</option>
-                  <option value="open">Preguntas Abiertas</option>
-                  <option value="mixed">Mixta (Ambas)</option>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">🔥 Nivel de Dificultad</label>
+                <select value={evalDifficulty} onChange={(e) => setEvalDifficulty(e.target.value as GenerateEvaluationPayload['difficulty'])} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                  <option value="facil">Fácil (Introductorio / Conceptos básicos)</option>
+                  <option value="medio">Medio (Estándar de cursada)</option>
+                  <option value="dificil">Difícil (Avanzado / Exigente)</option>
+                  <option value="exigente">Exigente (Olímpico / Nivel Excelencia)</option>
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Cantidad de Preguntas</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">📋 Tipo de Consignas</label>
+                <select value={evalQuestionType} onChange={(e) => setEvalQuestionType(e.target.value as GenerateEvaluationPayload['questionType'])} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                  <option value="mixed">Mixta (Opción Múltiple + Desarrollo)</option>
+                  <option value="multiple_choice">Opción Múltiple (4 opciones por ítem)</option>
+                  <option value="open">Preguntas Abiertas de Desarrollo</option>
+                  <option value="practical_cases">Resolución de Casos Prácticos Reales</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">⏱️ Duración Estimada del Examen</label>
+                <select value={evalTime} onChange={(e) => setEvalTime(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                  <option value="30 minutos">30 minutos (Examen corto / Quiz)</option>
+                  <option value="45 minutos">45 minutos (Módulo de clase)</option>
+                  <option value="60 minutos">60 minutos (1 hora estándar)</option>
+                  <option value="90 minutos">90 minutos (Parcial extenso)</option>
+                  <option value="120 minutos">120 minutos (Final / Integrador)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">🎯 Enfoque / Habilidades a Evaluar</label>
+                <select value={evalSkills} onChange={(e) => setEvalSkills(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                  <option value="Resolución de problemas prácticos y teoría">Resolución práctica + Teoría</option>
+                  <option value="Conceptos teóricos y definiciones fundamentales">Conceptos teóricos de memoria</option>
+                  <option value="Análisis crítico, razonamiento y deducción">Análisis crítico y deducción</option>
+                  <option value="Aplicación a casos de estudio y código/ejercicios">Casos de estudio real y práctica</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">🔢 Cantidad de Consignas</label>
                 <input type="number" min={1} max={30} value={evalCount} onChange={(e) => setEvalCount(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-brand-500" />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Dificultad</label>
-                <select value={evalDifficulty} onChange={(e) => setEvalDifficulty(e.target.value as GenerateEvaluationPayload['difficulty'])} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
-                  <option value="facil">Fácil (Introductorio)</option>
-                  <option value="medio">Medio (Estándar)</option>
-                  <option value="dificil">Difícil (Avanzado)</option>
-                </select>
-              </div>
+
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Contexto adicional (opcional)</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Aspectos específicos a considerar (Recomendado)</label>
                 <textarea
                   value={evalContext}
                   onChange={(e) => setEvalContext(e.target.value)}
-                  rows={2}
-                  placeholder="Ej: El alumno ya vio los temas A y B. Enfocarse en resolución de problemas."
+                  rows={3}
+                  placeholder="Ej: Aclarar que pueden usar calculadora científica. Incluir 2 ejercicios prácticos del Capítulo 3. El examen debe contar con rúbrica de corrección explícita."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 resize-none focus:outline-none focus:border-brand-500"
                 />
               </div>
@@ -341,31 +392,58 @@ export const AiToolsPanel: React.FC = () => {
 
       {/* Resultado */}
       {result && (
-        <div className="glass-panel rounded-3xl border border-purple-500/30 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-purple-500/5">
+        <div className="glass-panel rounded-3xl border border-purple-500/30 overflow-hidden shadow-2xl animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-purple-500/10 gap-3">
             <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
               <span>Resultado generado por Gemini AI</span>
-              <span className="text-slate-500 font-normal">
-                — {new Date(result.generatedAt).toLocaleTimeString('es-AR')}
+              <span className="text-slate-500 font-normal hidden sm:inline">
+                — {new Date(result.generatedAt).toLocaleTimeString('es-AR')} hs
               </span>
             </div>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                copied
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-              }`}
-            >
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? '¡Copiado!' : 'Copiar'}</span>
-            </button>
+
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <button
+                type="button"
+                onClick={() => {
+                  const docTitle =
+                    activeTool === 'evaluation'
+                      ? `Evaluacion_${evalSubject.replace(/\s+/g, '_') || 'Materia'}`
+                      : activeTool === 'comunicado'
+                      ? `Comunicado_${comTeacherName.replace(/\s+/g, '_') || 'Docente'}`
+                      : `Planificacion_${planSubject.replace(/\s+/g, '_') || 'Materia'}`;
+                  downloadAsWordDoc(
+                    activeTool === 'evaluation' ? `EVALUACIÓN: ${evalSubject}` : activeTool === 'comunicado' ? `COMUNICADO: ${comMotivo}` : `PLANIFICACIÓN: ${planSubject}`,
+                    result.content,
+                    docTitle
+                  );
+                }}
+                className="flex-1 sm:flex-initial flex items-center justify-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md transition-all border border-blue-400/40 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Descargar Word (.docx)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopy}
+                className={`flex-1 sm:flex-initial flex items-center justify-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  copied
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                }`}
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? '¡Copiado!' : 'Copiar'}</span>
+              </button>
+            </div>
           </div>
-          <pre className="p-5 text-xs text-slate-200 whitespace-pre-wrap leading-relaxed font-sans max-h-[600px] overflow-y-auto bg-slate-950/60">
-            {result.content}
-          </pre>
+
+          <div className="p-4 sm:p-6 bg-slate-950/80">
+            <pre className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed font-sans max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+              {result.content}
+            </pre>
+          </div>
         </div>
       )}
     </div>

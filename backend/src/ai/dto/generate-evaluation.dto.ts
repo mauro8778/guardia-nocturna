@@ -5,11 +5,12 @@ import {
   MaxLength,
   Min,
   Max,
+  IsOptional,
 } from 'class-validator';
 
 export class GenerateEvaluationDto {
   @IsString()
-  @MaxLength(120)
+  @MaxLength(150)
   subject: string;
 
   @IsString()
@@ -17,7 +18,7 @@ export class GenerateEvaluationDto {
   academicLevel: string;
 
   @IsString()
-  @IsIn(['multiple_choice', 'open', 'mixed'])
+  @IsIn(['multiple_choice', 'open', 'mixed', 'practical_cases'])
   questionType: string;
 
   @IsInt()
@@ -26,10 +27,20 @@ export class GenerateEvaluationDto {
   questionCount: number;
 
   @IsString()
-  @IsIn(['facil', 'medio', 'dificil'])
+  @IsIn(['facil', 'medio', 'dificil', 'exigente'])
   difficulty: string;
 
+  @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(50)
+  estimatedTime?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  skillsFocus?: string;
+
+  @IsString()
+  @MaxLength(1000)
   additionalContext: string;
 }

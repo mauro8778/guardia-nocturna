@@ -57,21 +57,33 @@ export class AiService {
     return this.genAI;
   }
 
+  private readonly RESCUE_TEXT_MODELS: string[] = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+  ];
+
   private async generateContent(prompt: string): Promise<string> {
     const ai = this.ensureAiAvailable();
-    try {
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      if (!text) throw new InternalServerErrorException('Error interno del servidor, contacte a soporte.');
-      return text;
-    } catch (error) {
-      if (error instanceof ServiceUnavailableException || error instanceof InternalServerErrorException) {
-        throw error;
+    let lastError: unknown;
+
+    for (const modelName of this.RESCUE_TEXT_MODELS) {
+      try {
+        const model = ai.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+        if (text) return text;
+      } catch (error) {
+        lastError = error;
+        this.logger.warn(`⚠️ Modelo ${modelName} falló o no está disponible, probando el siguiente en la lista...`);
       }
-      this.logger.error('Error al generar contenido con Gemini:', error);
-      throw new InternalServerErrorException('Error interno del servidor, contacte a soporte.');
     }
+
+    if (lastError instanceof ServiceUnavailableException || lastError instanceof InternalServerErrorException) {
+      throw lastError;
+    }
+    this.logger.error('Error al generar contenido con Gemini:', lastError);
+    throw new InternalServerErrorException('Error interno del servidor, contacte a soporte.');
   }
 
   async generateEvaluation(dto: GenerateEvaluationDto, userId: string): Promise<AiGenerationResultDto> {
@@ -79,30 +91,45 @@ export class AiService {
 
     const typeLabel =
       dto.questionType === 'multiple_choice'
-        ? 'opción múltiple (4 opciones por pregunta, indicar la correcta)'
+        ? 'Opción Múltiple (4 opciones por consigna A, B, C, D con solo una correcta)'
         : dto.questionType === 'open'
-        ? 'preguntas abiertas con guía de respuesta esperada'
-        : 'mixta (mitad opción múltiple, mitad preguntas abiertas)';
+          ? 'Preguntas Abiertas de desarrollo teórico/práctico con criterios de corrección'
+          : dto.questionType === 'practical_cases'
+            ? 'Resolución de Casos Prácticos y Ejercicios de Aplicación Real'
+            : 'Mixta (Mitad Opción Múltiple, Mitad Preguntas Abiertas de desarrollo)';
 
     const difficultyLabel =
-      dto.difficulty === 'facil' ? 'nivel básico/introductorio' : dto.difficulty === 'medio' ? 'nivel intermedio' : 'nivel avanzado/universitario';
+      dto.difficulty === 'facil'
+        ? 'Nivel Básico / Introductorio (evalúa conceptos fundamentales y comprensión directa)'
+        : dto.difficulty === 'medio'
+          ? 'Nivel Intermedio / Estándar (evalúa aplicación de conocimientos y resolución estándar)'
+          : dto.difficulty === 'dificil'
+            ? 'Nivel Avanzado / Exigente (evalúa análisis crítico, integración de temas y problemas complejos)'
+            : 'Nivel Olímpico / Excelencia (desafíos conceptuales, problemas de alta dificultad y razonamiento deductivo)';
 
-    const prompt = `Sos un docente experto en ${dto.subject} con amplia experiencia en educación ${dto.academicLevel}.
-Generá una evaluación escrita completa con las siguientes características:
-- Materia: ${dto.subject}
-- Nivel educativo: ${dto.academicLevel}
-- Tipo de preguntas: ${typeLabel}
-- Cantidad de preguntas: ${dto.questionCount}
-- Dificultad: ${difficultyLabel}
-${dto.additionalContext ? `- Contexto adicional: ${dto.additionalContext}` : ''}
+    const prompt = `Sos un docente pedagogo experto en ${dto.subject} con amplia trayectoria en nivel ${dto.academicLevel}.
+Diseñá una EVALUACIÓN ESCRITA DE ALTA CALIDAD PEDAGÓGICA con las siguientes especificaciones técnicas:
 
-FORMATO DE RESPUESTA:
-1. Encabezado con nombre de la institución (dejar en blanco), materia, fecha y espacio para nombre del alumno.
-2. Instrucciones generales breves.
-3. Las ${dto.questionCount} preguntas numeradas claramente.
-4. Al final, una sección separada "--- CLAVE DE RESPUESTAS (Solo para el docente) ---" con las respuestas correctas.
+📌 DATOS DE LA EVALUACIÓN:
+- Materia / Asignatura: ${dto.subject}
+- Nivel Educativo: ${dto.academicLevel}
+- Formato de Consignas: ${typeLabel}
+- Cantidad de Preguntas: ${dto.questionCount}
+- Nivel de Dificultad: ${difficultyLabel}
+${dto.estimatedTime ? `- Tiempo Estimado de Resolución: ${dto.estimatedTime}` : ''}
+${dto.skillsFocus ? `- Enfoque Pedagógico / Habilidades a Evaluar: ${dto.skillsFocus}` : ''}
+${dto.additionalContext ? `- Especificaciones Técnicas y Contexto Adicional: ${dto.additionalContext}` : ''}
 
-Respondé íntegramente en español. El tono debe ser académico y formal.`;
+🎯 ESTRUCTURA REQUERIDA EN EL EXAMEN:
+1. ENCABEZADO INSTITUCIONAL: (Espacio para Institución, Nombre del Alumno, Fecha, Materia, Nota Final y Tiempo).
+2. RECOMENDACIONES E INSTRUCCIONES GENERALES PARA EL ALUMNO (Claridad de letra, uso de calculadora/fórmulas si aplica, ponderación de puntajes).
+3. DESARROLLO DEL EXAMEN: Las ${dto.questionCount} preguntas/ejercicios numerados claramente, indicando el puntaje asignado a cada ítem (debe sumar 10 puntos en total).
+4. SECCIÓN FINAL PARA EL DOCENTE:
+   "--- CLAVE DE RESPUESTAS Y CRITERIOS DE CORRECCIÓN (EXCLUSIVO DOCENTE) ---"
+   - Para opción múltiple: Respuesta correcta explicitada con justificación breve.
+   - Para desarrollo/prácticos: Solución paso a paso, fórmula utilizada o respuesta modelo esperada.
+
+Respondé en español neutro académico, listo para imprimir o copiar directamente a un documento de texto.`;
 
     const content = await this.generateContent(prompt);
     return { content, generatedAt: new Date().toISOString() };
@@ -133,8 +160,8 @@ REQUISITOS:
       dto.periodType === 'bimestral'
         ? '5 bimestres'
         : dto.periodType === 'trimestral'
-        ? '4 trimestres'
-        : '2 cuatrimestres';
+          ? '4 trimestres'
+          : '2 cuatrimestres';
 
     const prompt = `Sos un docente experto en ${dto.subject} para el nivel ${dto.academicLevel}.
 Generá una planificación curricular anual completa organizada en ${periodsLabel}.
