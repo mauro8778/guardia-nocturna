@@ -1,7 +1,14 @@
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+
+const envPath = resolve(__dirname, '../.env');
+if (existsSync(envPath)) {
+  process.loadEnvFile(envPath);
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');

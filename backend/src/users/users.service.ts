@@ -15,6 +15,8 @@ export class UsersService implements OnModuleInit {
 
   async onModuleInit() {
     await this.seedSuperAdmin();
+    await this.seedDemoDocente();
+    await this.seedDemoStudent();
   }
 
   /**
@@ -47,6 +49,116 @@ export class UsersService implements OnModuleInit {
       });
       this.logger.log(`✅ Permisos y credenciales de SuperAdmin actualizados: ${adminEmail}`);
     }
+  }
+
+  /**
+   * Docente de prueba para el flujo público: docente@guardia.local / Docente1234
+   * Horario 8 a 23, lunes a sábado, $8.500 por hora.
+   */
+  async seedDemoDocente() {
+    const email = 'docente@guardia.local';
+    const fullName = 'Laura Gómez';
+    const hashedPassword = await bcrypt.hash('Docente1234', 10);
+    const paidUntil = new Date();
+    paidUntil.setFullYear(paidUntil.getFullYear() + 1);
+
+    const user = await this.prisma.user.upsert({
+      where: { email },
+      update: {
+        password: hashedPassword,
+        fullName,
+        phone: '5491112345678',
+        role: 'ADMIN',
+        status: 'APPROVED',
+        commissionRate: 0.10,
+        applyCommission: true,
+        membershipType: 'COMMISSION_10',
+        membershipStatus: 'ACTIVE_PAID',
+        membershipPaidUntil: paidUntil,
+      },
+      create: {
+        email,
+        password: hashedPassword,
+        fullName,
+        phone: '5491112345678',
+        role: 'ADMIN',
+        status: 'APPROVED',
+        commissionRate: 0.10,
+        applyCommission: true,
+        membershipType: 'COMMISSION_10',
+        membershipStatus: 'ACTIVE_PAID',
+        membershipPaidUntil: paidUntil,
+      },
+    });
+
+    const subjects = ['Matemática / Álgebra', 'Física I y II'];
+    const availability = {
+      teacherName: fullName,
+      teacherPhone: '5491112345678',
+      aliasMP: 'laura.gomez.mp',
+      linkMP: 'https://mpago.la/lauragomez',
+      is24Hours: false,
+      startHour: 8,
+      endHour: 23,
+      availableDays: JSON.stringify([1, 2, 3, 4, 5, 6]),
+      subjects: JSON.stringify(subjects),
+      hourlyRate: 8500,
+      pricingType: 'PER_HOUR',
+      subjectRates: JSON.stringify({
+        'Matemática / Álgebra': 8500,
+        'Física I y II': 9000,
+      }),
+      supportedModalities: 'BOTH',
+      teacherAddress: 'Av. Santa Fe 3200, Palermo, CABA',
+      offersAtStudentHome: true,
+      allowGroupClasses: true,
+      minGroupStudents: 2,
+      maxGroupStudents: 6,
+      teacherLat: -34.588,
+      teacherLng: -58.43,
+      zone: 'Palermo',
+    };
+
+    await this.prisma.availability.upsert({
+      where: { teacherId: user.id },
+      update: availability,
+      create: { teacherId: user.id, ...availability },
+    });
+
+    this.logger.log(`✅ Docente demo listo: ${email}`);
+  }
+
+  /**
+   * Alumno de prueba: alumno@guardia.local / Alumno1234
+   */
+  async seedDemoStudent() {
+    const email = 'alumno@guardia.local';
+    const hashedPassword = await bcrypt.hash('Alumno1234', 10);
+
+    await this.prisma.user.upsert({
+      where: { email },
+      update: {
+        password: hashedPassword,
+        fullName: 'Juan Pérez',
+        phone: '5491198765432',
+        role: 'STUDENT',
+        status: 'APPROVED',
+      },
+      create: {
+        email,
+        password: hashedPassword,
+        fullName: 'Juan Pérez',
+        phone: '5491198765432',
+        role: 'STUDENT',
+        status: 'APPROVED',
+        commissionRate: 0.10,
+        applyCommission: true,
+        membershipType: 'COMMISSION_10',
+        membershipStatus: 'APPROVED',
+      },
+    });
+
+    this.logger.log(`✅ Alumno demo listo: ${email}`);
   }
 
   async findByEmail(email: string): Promise<User | null> {
