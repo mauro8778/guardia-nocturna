@@ -14,9 +14,13 @@ export class UsersService implements OnModuleInit {
   ) { }
 
   async onModuleInit() {
-    await this.seedSuperAdmin();
-    await this.seedDemoDocente();
-    await this.seedDemoStudent();
+    try {
+      await this.seedSuperAdmin();
+      await this.seedDemoDocente();
+      await this.seedDemoStudent();
+    } catch (error: any) {
+      this.logger.warn(`⚠️ No se pudieron sembrar los usuarios iniciales (¿Base de datos no disponible o pausada?): ${error.message}`);
+    }
   }
 
   /**
